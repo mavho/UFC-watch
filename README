@@ -1,0 +1,24 @@
+
+So I want a UFC api that will specifically pull data from live fights.
+
+Where can i pull this data?
+    UFC live stats page, possibly
+    sherdog?
+    mma sites?
+
+How can I: ufc doesn't seem to have its own endpoints
+    HTML parsing seems to be the way.
+
+
+This API will be for scrapping information on live fights
+
+Funct:
+    (probably want to implement filter funct later)
+    Given that a card is going on right now
+    Get a list of fights on the card
+        :list may have fighters, results, etc
+    get current fight data 
+        :fighters fighting
+        :time? may be possible
+        :stats (strikes, grappling, etc)
+        
