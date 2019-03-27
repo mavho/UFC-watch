@@ -132,6 +132,22 @@ class API():
         live_results = parser.parseEvent(live_html) 
         return jsonify({'fights': live_results})
 
+    #Though this api is for getting the live events automatically, I thought it would be a good
+    #idea, of when specified an event page, I'm able to parse it hopefully. 
+    #user will type part of the link into the curl url
+    #This also reduces the two or three requests needed to find the live event/fight
+
+    #format goes like /ufc/api/v1.0/ufc-fight-night-march-30-2019/all
+    #gets the basic bout information on everything
+    @app.route('/ufc/api/v1.0/<link>/all', methods=['GET'])
+    def get_specified_events(link):
+        return link
+
+    #format goes like /ufc/api/v1.0/ufc-fight-night-march-30-2019/current
+    #this gets the live fight stats if there is one, else return not happening or something
+    @app.route('/ufc/api/v1.0/<link>/current', methods=['GET'])
+    def get_specified_event(link):
+        return link
 
     @app.errorhandler(404)
     def not_found(error):
