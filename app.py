@@ -27,7 +27,8 @@ class UFCParser():
         soup = BeautifulSoup(data, "lxml")
         #find the live fight
         #open another page for it...
-        print('hello')
+        for listing in soup.find_all('div', {'class':'c-listing-fight'}):
+            print(listing['data-fmid'])
         return
     def dumpStats(self, data):
         end_stats = {}
@@ -59,7 +60,6 @@ class UFCParser():
             else:
                 fight['Loser'] = 'unknown'
                 fight['Winner'] = 'unkown'
-
                 
             weight_class = listing.find('div', {'class': 'c-listing-fight__class'})
             end_stats = listing.find('div', {'class':'js-listing-fight__results'})
@@ -68,39 +68,64 @@ class UFCParser():
             fight['weight-class'] = weight_class.get_text(strip=True)
             fight['red-corner'] = red_name.get_text(strip=True)
             fight['blue-corner'] = blue_name.get_text(strip=True)
-            #fight['data-fmid'] = listing['data-fmid']
             event_json.append(fight)
+
+        return event_json
+    
+    def getLiveFightStats(self, data):
+        event_json = [] 
+
+        soup = BeautifulSoup(data, 'lxml')
+        fightdata = soup.find_all('div', {'class': ''})
+        print('poopoop', file=sys.stderr)
+        for listings in fightdata:
+            print('poopoop', file=sys.stderr)
+            print(listings.get_text(),file=sys.stderr)
+
+        event_json.append(soup.find('div').get_text())
 
         return event_json
 
 
-
 class ConfigURL:
-    url = "https://www.ufc.com/events"
+    def __init__(self):
+        self.event_page_url = "https://www.ufc.com/events"
+        self.live_url = ""
+    
+    def alterLiveURL(self):
+        self.live_url = "whatever"
+        return self.live_url
 
 
 class API():
     app = Flask(__name__)
 
-    @app.route('/ufc/api/v1.0/live-events/current', methods=['GET'])
+    @app.route('/ufc/api/v1.0/event/current', methods=['GET'])
+    def thomposVpettis():
+        parser = UFCParser()
+        html = parser.getRawHTML('https://www.ufc.com/matchup/912/7698/post')
+        data = parser.getLiveFightStats(html)
+        return jsonify({'fight': data}) 
+
+    @app.route('/ufc/api/v1.0/events/current', methods=['GET'])
     def get_live_fight():
         configobj = ConfigURL()
         parser = UFCParser()
-        raw_html = parser.getRawHTML(configobj.url) 
+        raw_html = parser.getRawHTML(configobj.event_page_url) 
 
         event = parser.getLiveEvent(raw_html)
 
         live_html = parser.getRawHTML("https://www.ufc.com/"+ event)
         live_fight_url = parser.getliveFightURL(live_html) 
-        live_results = parser.liveFight(parser.getRawHTML(live_fight_url)) 
-        return jsonify({'fights': live_results})
+        #live_results = parser.liveFight(parser.getRawHTML(live_fight_url)) 
+        return jsonify({'fights': 'none'})
 
-    @app.route('/ufc/api/v1.0/live-events/all', methods=['GET'])
+    @app.route('/ufc/api/v1.0/events/all', methods=['GET'])
     def get_all_events():
         #we start with the initial URL
         configobj = ConfigURL()
         parser = UFCParser()
-        raw_html = parser.getRawHTML(configobj.url) 
+        raw_html = parser.getRawHTML(configobj.event_page_url) 
         event = parser.getLiveEvent(raw_html)
 
         live_html = parser.getRawHTML("https://www.ufc.com/"+ event)
