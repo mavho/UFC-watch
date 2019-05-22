@@ -8,6 +8,7 @@ import sys
 
 class UFCParser():
 
+    #gets the raw bytes from the page
     def getRawHTML(self,url):
         endpoint = urllib.request.urlopen(url) 
         mybytes = endpoint.read()
@@ -22,7 +23,8 @@ class UFCParser():
         event_url = (soup.find('ul', {'class':'l-listing__group'})).find('li')
         return (event_url.find('a', href=True)['href'])
 
-    def getliveFightURL(self, data):
+    #tries to find the live fight URL given an event listing.
+    def findLiveFightURL(self, data):
         event_json = [] 
         soup = BeautifulSoup(data, "lxml")
         #find the live fight
@@ -30,19 +32,23 @@ class UFCParser():
         for listing in soup.find_all('div', {'class':'c-listing-fight'}):
             print(listing['data-fmid'])
         return
-    def dumpStats(self, data):
+
+    #helper method to insert time, round and method
+    def endStats(self, data):
         end_stats = {}
         end_stats['Time'] = data.find('div', {'class':'c-listing-fight__result-text time'}).get_text()
         end_stats['Round'] = data.find('div', {'class':'c-listing-fight__result-text round'}).get_text()
         end_stats['Method'] = data.find('div', {'class':'c-listing-fight__result-text method'}).get_text()
 
         return end_stats
+
     #given raw_html of some event page, parse it
     def parseEvent(self, data):
         event_json = [] 
         soup = BeautifulSoup(data, "lxml")
-
-        for listing in soup.find_all('div', {'class':'c-listing-fight'}):
+        #this data to be parsed
+        payload = soup.find_all('div', {'class':'c-listing-fight'})
+        for listing in payload: 
             fight = {}
 
             red_fighter = listing.find('div', {'class':'c-listing-fight__corner--red'})
@@ -64,25 +70,29 @@ class UFCParser():
             weight_class = listing.find('div', {'class': 'c-listing-fight__class'})
             end_stats = listing.find('div', {'class':'js-listing-fight__results'})
 
-            fight['end_stats'] = self.dumpStats(end_stats)
+            fight['end_stats'] = self.endStats(end_stats)
             fight['weight-class'] = weight_class.get_text(strip=True)
             fight['red-corner'] = red_name.get_text(strip=True)
             fight['blue-corner'] = blue_name.get_text(strip=True)
             event_json.append(fight)
 
         return event_json
-    
+
+    # steps, determine if bout is live.
+    # extract data-fmid
+    # ^^^^^^^^^^ may not occur here, currently just extracts based on page mentioned below
+    # I guess we don't need to return a request, we just open one up here
+    # This funct will be based on a url link like "/matchup/912/7762/post"
+    # there is a post and pre, I have to see if it is something different when live
     def getLiveFightStats(self, data):
         event_json = [] 
 
         soup = BeautifulSoup(data, 'lxml')
-        fightdata = soup.find_all('div', {'class': ''})
-        print('poopoop', file=sys.stderr)
+        fightdata = soup.find_all('div', {'class':'c-listing-fight'})
         for listings in fightdata:
-            print('poopoop', file=sys.stderr)
-            print(listings.get_text(),file=sys.stderr)
+            event_json.append(listings['data-fmid'])
 
-        event_json.append(soup.find('div').get_text())
+        #event_json.append(soup.find('div').get_text())
 
         return event_json
 
@@ -100,27 +110,28 @@ class ConfigURL:
 class API():
     app = Flask(__name__)
 
-    @app.route('/ufc/api/v1.0/event/current', methods=['GET'])
-    def thomposVpettis():
+    @app.route('/ufc/api/v1.0/events/PenaVPeterson', methods=['GET'])
+    def get_fight_stats():
         parser = UFCParser()
-        html = parser.getRawHTML('https://www.ufc.com/matchup/912/7698/post')
-        data = parser.getLiveFightStats(html)
-        return jsonify({'fight': data}) 
+        raw_html = parser.getRawHTML('https://www.ufc.com/matchup/912/7762/post')
+        stats = parser.getLiveFightStats(raw_html)
+        return jsonify({'stats':stats})
 
-    @app.route('/ufc/api/v1.0/events/current', methods=['GET'])
+    #hopefully find the live fight, and give statistics on it.
+    @app.route('/ufc/api/v1.0/live_events/current', methods=['GET'])
     def get_live_fight():
         configobj = ConfigURL()
         parser = UFCParser()
         raw_html = parser.getRawHTML(configobj.event_page_url) 
 
         event = parser.getLiveEvent(raw_html)
-
         live_html = parser.getRawHTML("https://www.ufc.com/"+ event)
         live_fight_url = parser.getliveFightURL(live_html) 
         #live_results = parser.liveFight(parser.getRawHTML(live_fight_url)) 
         return jsonify({'fights': 'none'})
 
-    @app.route('/ufc/api/v1.0/events/all', methods=['GET'])
+    #blanket command, get all the fights on the current card
+    @app.route('/ufc/api/v1.0/live_events/all', methods=['GET'])
     def get_all_events():
         #we start with the initial URL
         configobj = ConfigURL()
@@ -132,6 +143,9 @@ class API():
         live_results = parser.parseEvent(live_html) 
         return jsonify({'fights': live_results})
 
+
+
+    #Section if given a current working link"
     #Though this api is for getting the live events automatically, I thought it would be a good
     #idea, of when specified an event page, I'm able to parse it hopefully. 
     #user will type part of the link into the curl url
@@ -141,17 +155,33 @@ class API():
     #gets the basic bout information on everything
     @app.route('/ufc/api/v1.0/<link>/all', methods=['GET'])
     def get_specified_events(link):
-        return link
+        parser = UFCParser()
+        try:
+            live_html = parser.getRawHTML("https://www.ufc.com/event/"+ link )
+        except:
+            abort(404)
+        live_results = parser.parseEvent(live_html) 
+        return jsonify({'fights': live_results})
 
     #format goes like /ufc/api/v1.0/ufc-fight-night-march-30-2019/current
     #this gets the live fight stats if there is one, else return not happening or something
     @app.route('/ufc/api/v1.0/<link>/current', methods=['GET'])
     def get_specified_event(link):
-        return link
+        parser = UFCParser()
+        try:
+            live_html = parser.getRawHTML("https://www.ufc.com/event/"+ link )
+        except:
+            abort(404)
+        live_results = parser.getLiveFightStats(live_html) 
+        return jsonify({'fights': live_results})
 
+    #catch an error, most likely given from a wrong link
     @app.errorhandler(404)
-    def not_found(error):
-        return make_response(jsonify({'error': 'Not found'}), 404)
+    def page_not_found(e):
+        response = jsonify({'status': 404,'error': 'not found',
+                        'message': 'invalid resource URI'})
+        response.status_code = 404
+        return response
 
     def run(self, debug=True, port=5000):
         self.app.run(port=port, debug=debug)
