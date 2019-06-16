@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, abort, make_response, request, url_for
 from bs4 import BeautifulSoup
-import urllib.request
+#import urllib.request
+import json
+import requests
 import sys
 
 #need lxml parser for accurate results
@@ -10,8 +12,10 @@ class UFCParser():
 
     #gets the raw bytes from the page
     def getRawHTML(self,url):
-        endpoint = urllib.request.urlopen(url) 
-        mybytes = endpoint.read()
+        #endpoint = urllib.request.urlopen(url) 
+        endpoint = requests.get(url)
+        #mybytes = endpoint.read()
+        mybytes = endpoint.content
         endpoint.close()
         return mybytes
 
@@ -98,6 +102,7 @@ class UFCParser():
 
 
 class ConfigURL:
+    stuff = "hello"
     def __init__(self):
         self.event_page_url = "https://www.ufc.com/events"
         self.live_url = ""
@@ -106,16 +111,18 @@ class ConfigURL:
         self.live_url = "whatever"
         return self.live_url
 
+configobj = ConfigURL()
+
+app = Flask(__name__)
 
 class API():
-    app = Flask(__name__)
 
     @app.route('/ufc/api/v1.0/events/PenaVPeterson', methods=['GET'])
     def get_fight_stats():
         parser = UFCParser()
         raw_html = parser.getRawHTML('https://www.ufc.com/matchup/912/7762/post')
         stats = parser.getLiveFightStats(raw_html)
-        return jsonify({'stats':stats})
+        return jsonify({'stats': stats})
 
     #hopefully find the live fight, and give statistics on it.
     @app.route('/ufc/api/v1.0/live_events/current', methods=['GET'])
