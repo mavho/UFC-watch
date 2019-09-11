@@ -1,6 +1,7 @@
 import json, sys
 import urllib.request
 from bs4 import BeautifulSoup
+from flask import jsonify
 class UFCParser():
     #gets the raw bytes from the page
     def getRawHTML(self,url):
@@ -114,7 +115,10 @@ def main():
     data_bytes = parser.getRawHTML(url)
     result = parser.getLiveEvent(data_bytes)
     print(result)
-
+    print((url[:-7] + result))
+    data_bytes = parser.getRawHTML(url[:-7] + result)
+    payload = parser.parseEvent(data_bytes)
+    print(json.dumps(payload, indent=4))
 
 if __name__ == '__main__':
     main()
