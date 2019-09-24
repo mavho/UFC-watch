@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from flask import jsonify
 
 
-class UFC_Parser():
+class UFC_Stats_Parser():
     def getRawHTML(self,url):
         req = urllib.request.Request(
             url = url,
@@ -63,17 +63,18 @@ class UFC_Parser():
         striking_json2['SubAtt'] = payload[4].contents[3].get_text(strip=True)
         striking_json2['PassGrd'] = payload[5].contents[3].get_text(strip=True)
         fight_stats[fighter_2] = striking_json2
-        #print('-------------------------------------------------------')
-
-
-
+        result = payload[0].get_text(strip=True)
+        if result == 'win':
+            fight_stats['Winner'] = fighter_1
+            fight_stats['Loser'] = fighter_2
+        else:
+            fight_stats['Result'] = result
 
 def main():
     url = 'http://www.ufcstats.com/statistics/events/completed?page=all'
-    parser = UFC_Parser()
+    parser = UFC_Stats_Parser()
     print('Get current fights test------------------')    
-    #data_bytes = parser.getRawHTML(url)
-    #result = parser.parse_event_list(data_bytes)
+
 
     url = 'http://www.ufcstats.com/event-details/94a5aaf573f780ad'
     data_bytes = parser.getRawHTML(url)

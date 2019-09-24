@@ -1,106 +1,12 @@
 from flask import Flask, jsonify, abort, make_response, request, url_for
 from bs4 import BeautifulSoup
+from UFC_stats_parse import UFC_Stats_Parser as UFCParser
 #import urllib.request
 import json
 import requests
 import sys
 
 #need lxml parser for accurate results
-    
-
-class UFCParser():
-
-    #gets the raw bytes from the page
-    def getRawHTML(self,url):
-        #endpoint = urllib.request.urlopen(url) 
-        endpoint = requests.get(url)
-        #mybytes = endpoint.read()
-        mybytes = endpoint.content
-        endpoint.close()
-        return mybytes
-
-    #this gets the first event link within the event list
-    #future funct: needs to determine whether or not it is live 
-    #success boolean? maybe do check later on
-    def getLiveEvent(self,data):
-        soup = BeautifulSoup(data, "lxml")
-        event_url = (soup.find('ul', {'class':'l-listing__group'})).find('li')
-        return (event_url.find('a', href=True)['href'])
-
-    #tries to find the live fight URL given an event listing.
-    def findLiveFightURL(self, data):
-        event_json = [] 
-        soup = BeautifulSoup(data, "lxml")
-        #find the live fight
-        #open another page for it...
-        for listing in soup.find_all('div', {'class':'c-listing-fight'}):
-            print(listing['data-fmid'])
-        return
-
-    #helper method to insert time, round and method
-    def endStats(self, data):
-        end_stats = {}
-        end_stats['Time'] = data.find('div', {'class':'c-listing-fight__result-text time'}).get_text()
-        end_stats['Round'] = data.find('div', {'class':'c-listing-fight__result-text round'}).get_text()
-        end_stats['Method'] = data.find('div', {'class':'c-listing-fight__result-text method'}).get_text()
-
-        return end_stats
-
-    #given raw_html of some event page, parse it
-    def parseEvent(self, data):
-        event_json = [] 
-        soup = BeautifulSoup(data, "lxml")
-        #this data to be parsed
-        payload = soup.find_all('div', {'class':'c-listing-fight'})
-        for listing in payload: 
-            fight = {}
-
-            red_fighter = listing.find('div', {'class':'c-listing-fight__corner--red'})
-            blue_fighter = listing.find('div', {'class':'c-listing-fight__corner--blue'})
-
-            red_name = red_fighter.find('div', {'class':'c-listing-fight__corner-name'})
-            blue_name = blue_fighter.find('div', {'class':'c-listing-fight__corner-name'})
-
-            if((red_fighter.find('div',{'class':'c-listing-fight__outcome-wrapper'})).get_text(strip=True) == 'Loss'):
-                fight['Loser'] = red_name.get_text(strip=True)
-                fight['Winner'] = blue_name.get_text(strip=True)
-            elif((blue_fighter.find('div',{'class':'c-listing-fight__outcome-wrapper'})).get_text(strip=True) == 'Loss'):
-                fight['Loser'] = blue_name.get_text(strip=True)
-                fight['Winner'] = red_name.get_text(strip=True)
-            else:
-                fight['Loser'] = 'unknown'
-                fight['Winner'] = 'unkown'
-                
-            weight_class = listing.find('div', {'class': 'c-listing-fight__class'})
-            end_stats = listing.find('div', {'class':'js-listing-fight__results'})
-
-            fight['end_stats'] = self.endStats(end_stats)
-            fight['weight-class'] = weight_class.get_text(strip=True)
-            fight['red-corner'] = red_name.get_text(strip=True)
-            fight['blue-corner'] = blue_name.get_text(strip=True)
-            event_json.append(fight)
-
-        return event_json
-
-    # steps, determine if bout is live.
-    # extract data-fmid
-    # ^^^^^^^^^^ may not occur here, currently just extracts based on page mentioned below
-    # I guess we don't need to return a request, we just open one up here
-    # This funct will be based on a url link like "/matchup/912/7762/post"
-    # there is a post and pre, I have to see if it is something different when live
-    def getLiveFightStats(self, data):
-        event_json = [] 
-
-        soup = BeautifulSoup(data, 'lxml')
-        fightdata = soup.find_all('div', {'class':'c-listing-fight'})
-        for listings in fightdata:
-            event_json.append(listings['data-fmid'])
-
-        #event_json.append(soup.find('div').get_text())
-
-        return event_json
-
-
 class ConfigURL:
     stuff = "hello"
     def __init__(self):
@@ -134,8 +40,8 @@ class API():
         event = parser.getLiveEvent(raw_html)
         live_html = parser.getRawHTML("https://www.ufc.com/"+ event)
         live_fight_url = parser.getliveFightURL(live_html) 
-        #live_results = parser.liveFight(parser.getRawHTML(live_fight_url)) 
-        return jsonify({'fights': 'none'})
+        live_results = parser.liveFight(parser.getRawHTML(live_fight_url)) 
+        return jsonify({'fights': live_results})
 
     #blanket command, get all the fights on the current card
     @app.route('/ufc/api/v1.0/live_events/all', methods=['GET'])

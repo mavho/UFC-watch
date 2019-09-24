@@ -1,3 +1,4 @@
+###Prototype, originally parsing for the official UFC website. 
 import json, sys
 import urllib.request
 from bs4 import BeautifulSoup
@@ -57,7 +58,7 @@ class UFCParser():
         event_json = [] 
         soup = BeautifulSoup(data, "lxml")
         #this data to be parsed
-        payload = soup.find_all('div', {'class':'c-listing-fight'})
+        payload = soup.find_all('div', {'class':'c-listing-fight__content'})
         for listing in payload: 
             fight = {}
 
@@ -114,9 +115,11 @@ def main():
     print('Get current fights test------------------')    
     data_bytes = parser.getRawHTML(url)
     result = parser.getLiveEvent(data_bytes)
-    print(result)
-    print((url[:-7] + result))
-    data_bytes = parser.getRawHTML(url[:-7] + result)
+    #print(result)
+    
+    #print((url[:-7] + result))
+    #data_bytes = parser.getRawHTML(url[:-7] + result)
+    data_bytes = parser.getRawHTML('https://www.ufc.com/event/ufc-fight-night-september-14-2019')
     payload = parser.parseEvent(data_bytes)
     print(json.dumps(payload, indent=4))
 
