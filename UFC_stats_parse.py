@@ -20,15 +20,20 @@ class UFC_Stats_Parser():
         endpoint.close()
         return mybytes
     
-    
+    def generate_url_list(self, data):
+        soup = BeautifulSoup(data,'lxml') 
+        payload = soup.find('table', {'class', 'b-statistics__table-events'})
+        payload = payload.find_all('a', href=True)
+
+        for listing in payload:
+            print(listing['href'])
+
     def parse_event_list(self, data):
         soup = BeautifulSoup(data, 'lxml')
-
         payload = soup.find('table', {'class', 'b-statistics__table-events'})
-
         return payload
 
-
+    #this is given an event page
     def parse_event_fights(self, data):
         soup = BeautifulSoup(data, 'lxml')
         payload = soup.find('tbody', {'class', 'b-fight-details__table-body'})
@@ -42,7 +47,7 @@ class UFC_Stats_Parser():
             fight_list.append(fight_stats)
 
         return fight_list
-
+    #parse the contents section of a td, populates fight_stats
     def parse_listing(self, data, fight_stats):
         payload = data.find_all('td')
         fight_stats['Time'] = payload[9].get_text(strip=True)
@@ -76,9 +81,10 @@ def main():
     print('Get current fights test------------------')    
 
 
-    url = 'http://www.ufcstats.com/event-details/94a5aaf573f780ad'
+    #url = 'http://www.ufcstats.com/event-details/94a5aaf573f780ad'
     data_bytes = parser.getRawHTML(url)
-    result = parser.parse_event_fights(data_bytes)
+    #result = parser.parse_event_fights(data_bytes)
+    result = parser.generate_url_list(data_bytes)
     print(result)
 
 
