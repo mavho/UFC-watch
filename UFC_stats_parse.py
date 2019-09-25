@@ -25,8 +25,15 @@ class UFC_Stats_Parser():
         payload = soup.find('table', {'class', 'b-statistics__table-events'})
         payload = payload.find_all('a', href=True)
 
+        result = []
         for listing in payload:
-            print(listing['href'])
+            row = {}
+            #listing['href']
+            row['event'] = listing.get_text(strip=True)
+            row['link'] = listing['href']
+            result.append(row)
+            #print(listing['href'] + ' ' + listing.get_text(strip=True))
+        return result
 
     def parse_event_list(self, data):
         soup = BeautifulSoup(data, 'lxml')
@@ -85,8 +92,6 @@ def main():
     data_bytes = parser.getRawHTML(url)
     #result = parser.parse_event_fights(data_bytes)
     result = parser.generate_url_list(data_bytes)
-    print(result)
-
 
 if __name__ == '__main__':
     main()
