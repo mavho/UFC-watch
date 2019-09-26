@@ -5,6 +5,7 @@ from flask import jsonify
 
 
 class UFC_Stats_Parser():
+    #used to get the raw bytes from a webpage
     def getRawHTML(self,url):
         req = urllib.request.Request(
             url = url,
@@ -20,6 +21,8 @@ class UFC_Stats_Parser():
         endpoint.close()
         return mybytes
     
+    #returns a json from the events page of ufc_stats with query set to all.
+    #json contains links and event names
     def generate_url_list(self, data):
         soup = BeautifulSoup(data,'lxml') 
         payload = soup.find('table', {'class', 'b-statistics__table-events'})
@@ -41,6 +44,7 @@ class UFC_Stats_Parser():
         return payload
 
     #this is given an event page
+    #returns a json with the fight stats
     def parse_event_fights(self, data):
         soup = BeautifulSoup(data, 'lxml')
         payload = soup.find('tbody', {'class', 'b-fight-details__table-body'})
@@ -55,32 +59,42 @@ class UFC_Stats_Parser():
 
         return fight_list
     #parse the contents section of a td, populates fight_stats
+    #Do not call this!
     def parse_listing(self, data, fight_stats):
+        print(data['data-link'])
         payload = data.find_all('td')
         fight_stats['Time'] = payload[9].get_text(strip=True)
         fight_stats['Round'] = payload[8].get_text(strip=True)
         fight_stats['Method'] = payload[7].get_text(strip=True)
         fight_stats['WeightClass'] = payload[6].get_text(strip=True)
-        fighter_1 = payload[1].contents[1].get_text(strip=True)
-        fighter_2 = payload[1].contents[3].get_text(strip=True)
+        #fighter_1 = payload[1].contents[1].get_text(strip=True)
+        #fighter_2 = payload[1].contents[3].get_text(strip=True)
         striking_json = {}
         striking_json2 = {}
-        striking_json['Strikes'] = payload[2].contents[1].get_text(strip=True)
-        striking_json['TakeDown'] = payload[3].contents[1].get_text(strip=True)
-        striking_json['SubAtt'] = payload[4].contents[1].get_text(strip=True)
-        striking_json['PassGrd'] = payload[5].contents[1].get_text(strip=True)
-        fight_stats[fighter_1] = striking_json
-        striking_json2['Strikes'] = payload[2].contents[3].get_text(strip=True)
-        striking_json2['TakeDown'] = payload[3].contents[3].get_text(strip=True)
-        striking_json2['SubAtt'] = payload[4].contents[3].get_text(strip=True)
-        striking_json2['PassGrd'] = payload[5].contents[3].get_text(strip=True)
-        fight_stats[fighter_2] = striking_json2
+        #now we populate striking,td,sub statistics
+        fight_details_url = data['data-link']
+        data_bytes = self.getRawHTML(fight_details_url)
+        self.parse_striking_stats(data_bytes,striking_json,striking_json2) 
+        #striking_json['Strikes'] = payload[2].contents[1].get_text(strip=True)
+        #striking_json['TakeDown'] = payload[3].contents[1].get_text(strip=True)
+        #striking_json['SubAtt'] = payload[4].contents[1].get_text(strip=True)
+        #striking_json['PassGrd'] = payload[5].contents[1].get_text(strip=True)
+        #fight_stats[fighter_1] = striking_json
+        #striking_json2['Strikes'] = payload[2].contents[3].get_text(strip=True)
+        #striking_json2['TakeDown'] = payload[3].contents[3].get_text(strip=True)
+        #striking_json2['SubAtt'] = payload[4].contents[3].get_text(strip=True)
+        #striking_json2['PassGrd'] = payload[5].contents[3].get_text(strip=True)
+        #fight_stats[fighter_2] = striking_json2
         result = payload[0].get_text(strip=True)
         if result == 'win':
             fight_stats['Winner'] = fighter_1
             fight_stats['Loser'] = fighter_2
         else:
             fight_stats['Result'] = result
+    #given fight details, parse bout statistics    
+    def parse_striking_stats(self, data, fighter1_stats, fighter2_stats):
+        soup = BeautifulSoup(data, 'lxml')
+
 
 def main():
     url = 'http://www.ufcstats.com/statistics/events/completed?page=all'
