@@ -7,4 +7,17 @@ class Events(db.Model):
     def __reduce__(self):
         return '<Events> {}'.format(self.event)
 
+
+class Bouts(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, index=True)
+    weight_class = db.Column(db.String(32), index=True)
+    red_fighter = db.Column(db.String(64), index=True)
+    blue_fighter = db.Column(db.String(64), index=True)
+    winner = db.Column(db.String(64), index=True)
+    loser = db.Column(db.String(64), index=True)
+    end_round = db.Column(db.Integer, index=True)
+    time = db.Column(db.String(64), index=True)
+    method = db.Column(db.String(32), index=True)
+
     
