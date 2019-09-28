@@ -5,6 +5,7 @@ from flask import jsonify
 
 
 class UFC_Stats_Parser():
+
     #used to get the raw bytes from a webpage
     def getRawHTML(self,url):
         req = urllib.request.Request(
@@ -61,7 +62,7 @@ class UFC_Stats_Parser():
     #parse the contents section of a td, populates fight_stats
     #Do not call this!
     def parse_listing(self, data, fight_stats):
-        print(data['data-link'])
+        #print(data['data-link'])
         payload = data.find_all('td')
         fight_stats['Time'] = payload[9].get_text(strip=True)
         fight_stats['Round'] = payload[8].get_text(strip=True)
@@ -80,7 +81,10 @@ class UFC_Stats_Parser():
         if result == 'win':
             fight_stats['Winner'] = fighter_1
             fight_stats['Loser'] = fighter_2
+            fight_stats['Result'] = result 
         else:
+            fight_stats['Winner'] = 'NA' 
+            fight_stats['Loser'] = 'NA' 
             fight_stats['Result'] = result
 
     #given fight details, parse bout statistics    
@@ -91,8 +95,8 @@ class UFC_Stats_Parser():
         red_fighter = columns[0].contents[1].get_text(strip=True)
         blue_fighter = columns[0].contents[3].get_text(strip=True)
 
-        fighter1_stats['COLOR'] = 'red' 
-        fighter2_stats['COLOR'] = 'blue'        
+        fighter1_stats['fighter'] = red_fighter 
+        fighter2_stats['fighter'] = blue_fighter        
 
         fighter1_stats['KD'] = columns[1].contents[1].get_text(strip=True)
         fighter2_stats['KD'] = columns[1].contents[3].get_text(strip=True)
@@ -122,8 +126,8 @@ class UFC_Stats_Parser():
         fighter1_stats['PASS'] = columns[9].contents[1].get_text(strip=True)
         fighter2_stats['PASS'] = columns[9].contents[3].get_text(strip=True)
 
-        fight_stats[red_fighter] = fighter1_stats
-        fight_stats[blue_fighter] = fighter2_stats
+        fight_stats['Red'] = fighter1_stats
+        fight_stats['Blue'] = fighter2_stats
 
 
 
