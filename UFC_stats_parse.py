@@ -1,4 +1,4 @@
-import json, sys, re
+import json, sys, re, time
 import urllib.request
 from bs4 import BeautifulSoup
 from flask import jsonify
@@ -8,18 +8,34 @@ class UFC_Stats_Parser():
 
     #used to get the raw bytes from a webpage
     def getRawHTML(self,url):
-        req = urllib.request.Request(
-            url = url,
-            data = None,
-            headers = {
-                'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'
-            } 
-        )
-        endpoint = urllib.request.urlopen(req) 
+        proxy_list= [ 
+            'http://173.46.67.172:58517',
+            'http://183.181.20.62:80',
+            'http://96.76.3.210:80'
+        ] 
+        for proxy in proxy_list:
+            authinfo = urllib.request.HTTPBasicAuthHandler()
+            proxy_support = urllib.request.ProxyHandler({'http':proxy})
+            opener = urllib.request.build_opener(proxy_support,authinfo,urllib.request.CacheFTPHandler)
+            urllib.request.install_opener(opener)
+            req = urllib.request.Request(
+                url = url,
+                data = None,
+                headers = {
+                    'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'
+                } 
+            )
+            try:
+                endpoint = urllib.request.urlopen(req) 
+                mybytes = endpoint.read()
+                endpoint.close()
+                print('Able to open')
+                break
+            except:
+                print('Next proxy in 5 seconds')
+                time.sleep(5)
         #endpoint = request.get(url)
-        mybytes = endpoint.read()
         #mybytes = endpoint.content
-        endpoint.close()
         return mybytes
     
     #returns a json from the events page of ufc_stats with query set to all.
@@ -88,6 +104,7 @@ class UFC_Stats_Parser():
             fight_stats['Result'] = result
 
     #given fight details, parse bout statistics    
+    #New link so have to open another soup obj
     def parse_striking_stats(self, data,fight_stats,fighter1_stats, fighter2_stats):
         soup = BeautifulSoup(data, 'lxml')
         table = soup.find('table')
@@ -118,7 +135,6 @@ class UFC_Stats_Parser():
 
         fighter1_stats['TD_PRCT'] = columns[7].contents[1].get_text(strip=True)
         fighter2_stats['TD_PRCT'] = columns[7].contents[3].get_text(strip=True)
-
 
         fighter1_stats['SUB'] = columns[8].contents[1].get_text(strip=True)
         fighter2_stats['SUB'] = columns[8].contents[3].get_text(strip=True)
