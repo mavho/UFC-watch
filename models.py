@@ -33,8 +33,6 @@ class Bouts(db.Model):
     r_SIGSTR_PRCT = db.Column(db.String(12),index=True)
     b_TTLSTR = db.Column(db.String(12), index=True)
     r_TTLSTR = db.Column(db.String(12), index=True)
-    b_TTLSTR_PRCT = db.Column(db.String(12),index=True)
-    r_TTLSTR_PRCT = db.Column(db.String(12),index=True)
     b_TD= db.Column(db.Integer, index=True)
     r_TD= db.Column(db.Integer, index=True)
     b_TD_PRCT = db.Column(db.String(12),index=True)

@@ -32,7 +32,6 @@ def populate_bouts_fighters_table(parser,event_data):
                 b_SIGSTR=bout['Blue']['SIGSTR'], r_SIGSTR=bout['Red']['SIGSTR'],
                 b_SIGSTR_PRCT=bout['Blue']['SIGSTR_PRCT'], r_SIGSTR_PRCT=bout['Red']['SIGSTR_PRCT'],
                 b_TTLSTR=bout['Blue']['TTLSTR'], r_TTLSTR=bout['Red']['TTLSTR'],
-                b_TTLSTR_PRCT=bout['Blue']['TTLSTR_PRCT'], r_TTLSTR_PRCT=bout['Red']['TTLSTR_PRCT'],
                 b_TD=bout['Blue']['TD'], r_TD=bout['Red']['TD'],
                 b_TD_PRCT=bout['Blue']['TD_PRCT'], r_TD_PRCT=bout['Red']['TD_PRCT'],
                 b_SUB=bout['Blue']['SUB'], r_SUB=bout['Red']['SUB'],

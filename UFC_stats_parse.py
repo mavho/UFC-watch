@@ -127,20 +127,17 @@ class UFC_Stats_Parser():
         fighter1_stats['TTLSTR'] = re.sub(' of ', '/', columns[4].contents[1].get_text(strip=True))
         fighter2_stats['TTLSTR'] = re.sub(' of ', '/', columns[4].contents[3].get_text(strip=True))
 
-        fighter1_stats['TTLSTR_PRCT'] = columns[5].contents[1].get_text(strip=True)
-        fighter2_stats['TTLSTR_PRCT'] = columns[5].contents[3].get_text(strip=True)
+        fighter1_stats['TD'] = re.sub(' of ', '/', columns[5].contents[1].get_text(strip=True))
+        fighter2_stats['TD'] = re.sub(' of ', '/',columns[5].contents[3].get_text(strip=True))
 
-        fighter1_stats['TD'] = re.sub(' of ', '/', columns[6].contents[1].get_text(strip=True))
-        fighter2_stats['TD'] = re.sub(' of ', '/',columns[6].contents[3].get_text(strip=True))
+        fighter1_stats['TD_PRCT'] = columns[6].contents[1].get_text(strip=True)
+        fighter2_stats['TD_PRCT'] = columns[6].contents[3].get_text(strip=True)
 
-        fighter1_stats['TD_PRCT'] = columns[7].contents[1].get_text(strip=True)
-        fighter2_stats['TD_PRCT'] = columns[7].contents[3].get_text(strip=True)
+        fighter1_stats['SUB'] = columns[7].contents[1].get_text(strip=True)
+        fighter2_stats['SUB'] = columns[7].contents[3].get_text(strip=True)
 
-        fighter1_stats['SUB'] = columns[8].contents[1].get_text(strip=True)
-        fighter2_stats['SUB'] = columns[8].contents[3].get_text(strip=True)
-
-        fighter1_stats['PASS'] = columns[9].contents[1].get_text(strip=True)
-        fighter2_stats['PASS'] = columns[9].contents[3].get_text(strip=True)
+        fighter1_stats['PASS'] = columns[8].contents[1].get_text(strip=True)
+        fighter2_stats['PASS'] = columns[8].contents[3].get_text(strip=True)
 
         fight_stats['Red'] = fighter1_stats
         fight_stats['Blue'] = fighter2_stats
