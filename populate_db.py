@@ -9,17 +9,16 @@ def populate_events_table(event_list):
 
 def populate_bouts_fighters_table(parser,event_data):
     #Only the first 10 bouts
-    for bout in event_data[12:15]:
-        print(bout['event'])
+    for bout in event_data[15:20]:
+        print(bout['event'], flush=True)
         event = Events.query.filter_by(event=bout['event']).first()
         if event is None:
             event = 0
-        
         try:
             data_bytes = parser.getRawHTML(bout['link'])
             result = parser.parse_event_fights(data_bytes)
-        except TimeoutError:
-            print('Crashed on ' + event.id)
+        except:
+            print('Crashed on ' + event.id, flush=True)
             db.session.commit()
             continue
 
@@ -43,12 +42,12 @@ def main():
     parser = UFC_Stats_Parser()
     configobj = ConfigURL()
 
-    print('populate event table')
+    print('populate event table',flush=True)
     #events list page
     data_bytes = parser.getRawHTML(configobj.url)
     result = parser.generate_url_list(data_bytes) 
 #    populate_events_table(result)
-    print('populate bouts table')
+    print('populate bouts table',flush=True)
     populate_bouts_fighters_table(parser,result)
 
 

@@ -5,35 +5,50 @@ from flask import jsonify
 
 
 class UFC_Stats_Parser():
-
+    working_proxy = ''
     #used to get the raw bytes from a webpage
     def getRawHTML(self,url):
-        proxy_list= [ 
-            'http://173.46.67.172:58517',
-            'http://183.181.20.62:80',
-            'http://96.76.3.210:80'
-        ] 
-        for proxy in proxy_list:
+        #proxy_list= [ 
+        #    'http://118.173.232.170:44029',
+        #    'http://177.53.57.154:57894',
+        #    'http://96.9.236.243:3120',
+        #    'http://96.9.215.221:3120'
+        #]
+        proxy_list = [ 
+            'http://12.218.209.130:53281',
+            'http://191.96.42.184:3129',
+            'http://66.82.22.79:80',
+            'http://191.96.42.184:3129']
+        for proxy in proxy_list[:]:
             authinfo = urllib.request.HTTPBasicAuthHandler()
-            proxy_support = urllib.request.ProxyHandler({'http':proxy})
+            if self.working_proxy is not '':
+                proxy_support = urllib.request.ProxyHandler({'http': working_proxy})
+            else:
+                proxy_support = urllib.request.ProxyHandler({'http': proxy})
             opener = urllib.request.build_opener(proxy_support,authinfo,urllib.request.CacheFTPHandler)
-            urllib.request.install_opener(opener)
+            print('opener', flush=True)
+
+            #urllib.request.install_opener(opener)
             req = urllib.request.Request(
                 url = url,
                 data = None,
                 headers = {
                     'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'
-                } 
+                },
             )
             try:
-                endpoint = urllib.request.urlopen(req) 
+                endpoint = opener.open(req)
+                #endpoint = urllib.request.urlopen(req) 
                 mybytes = endpoint.read()
                 endpoint.close()
-                print('Able to open')
+                print('Able to open ' + proxy,flush=True)
+                self.working_proxy = proxy
                 break
-            except:
-                print('Next proxy in 5 seconds')
-                time.sleep(5)
+            except Exception as e:
+                print(e ,flush=True)
+                self.working_proxy = ''
+                #proxy_list.remove(proxy)
+                time.sleep(1)
         #endpoint = request.get(url)
         #mybytes = endpoint.content
         return mybytes
