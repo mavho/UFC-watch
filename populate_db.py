@@ -1,15 +1,25 @@
 from UFC_handler import db, ConfigURL 
 from UFC_stats_parse import UFC_Stats_Parser
 from models import Events, Bouts
+
+#should only be called with an empty events table
 def populate_events_table(event_list):
     for event in event_list:
         db.session.add(Events(event=event['event']))
     
     db.session.commit()
+#gets new event and commits to db
+def update_events_table(event_list):
+    
+    e = Events(event=event_list[0]['event'])
+    db.session.add(e)
+    db.session.commit()
+
 
 def populate_bouts_fighters_table(parser,event_data):
     #Only the first 10 bouts
-    for bout in event_data[15:20]:
+    #stopped at 140
+    for bout in event_data[130:140]:
         print(bout['event'], flush=True)
         event = Events.query.filter_by(event=bout['event']).first()
         if event is None:
@@ -48,7 +58,8 @@ def main():
     result = parser.generate_url_list(data_bytes) 
 #    populate_events_table(result)
     print('populate bouts table',flush=True)
-    populate_bouts_fighters_table(parser,result)
+#    populate_bouts_fighters_table(parser,result)
+    update_events_table(result)
 
 
 
