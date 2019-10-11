@@ -9,18 +9,22 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 
+def p2f(str):
+    return(float(str.strip('%'))/100)
 def main():
     #db i'm accessing
     db_engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
     connection = db_engine.connect()
-    #let's say i'm getting whittaker's stuff
-    fighter = 'Yoel Romero'
-    blue_payload = 'winner, method, result, end_round, b_KD, b_PASS, b_SIGSTR, b_SIGSTR_PRCT, b_SUB, b_TD, b_TD_PRCT, b_TTLSTR'
-    red_payload = 'winner, method, result, end_round, r_KD, r_PASS, r_SIGSTR, r_SIGSTR_PRCT, r_SUB, r_TD, r_TD_PRCT, r_TTLSTR'
+
+    #weight class
+    weight_class = 'Middleweight'
+    blue_payload = 'blue_fighter,b_KD, b_PASS, b_SIGSTR, b_SIGSTR_PRCT, b_SUB, b_TD, b_TD_PRCT, b_TTLSTR'
+    red_payload = 'red_fighter, r_KD, r_PASS, r_SIGSTR, r_SIGSTR_PRCT, r_SUB, r_TD, r_TD_PRCT, r_TTLSTR'
+    stats_payload = 'winner, loser, end_round, time, method, result'
 
     #red_query = "SELECT * FROM bouts WHERE red_fighter='Robert Whittaker'" 
-    red_query = "SELECT " + red_payload + " FROM bouts WHERE red_fighter='" + fighter + "'" 
-    blue_query = "SELECT " + blue_payload + " FROM bouts WHERE blue_fighter='" + fighter + "'" 
+    red_query = "SELECT " + red_payload + " FROM bouts WHERE weight_class='" + weight_class+ "'" 
+    blue_query = "SELECT " + blue_payload + " FROM bouts WHERE weight_class='" + weight_class + "'" 
     #blue_query = "SELECT * FROM bouts WHERE blue_fighter='Robert Whittaker'"
 
     ###
@@ -28,32 +32,51 @@ def main():
     #all stats are recorded as red, since when u union it over laps
     #names are different but the reasoning is the same
     ###
-    data_frame = pd.read_sql(red_query + ' UNION ' + blue_query, connection)
+    #data_frame = pd.read_sql(red_query + ' UNION ' + blue_query + ' UNION ' + stats_payload, connection)
+    query = "SELECT * FROM bouts WHERE weight_class='Middleweight'"
+    data_frame = pd.read_sql(query, connection)
+    data_frame["b_win"] = 0;
+    data_frame["r_win"] = 0;
     for index, rows in data_frame.iterrows():
-        if(rows['winner'] == fighter):
-            data_frame.set_value(index,'winner', int(1))
-        else:
-            data_frame.set_value(index,'winner', int(0))
+        if(rows['winner'] == rows['blue_fighter']):
+            data_frame.set_value(index, 'b_win', int(1))
+            data_frame.set_value(index, 'r_win', int(0))
+        elif(rows['winner'] == rows['red_fighter']):
+            data_frame.set_value(index, 'b_win', int(0))
+            data_frame.set_value(index, 'r_win', int(1))
+        
+        #convert the strings to floats
         try:
-            data_frame.set_value(index,'r_TD',int(rows['r_TD'].split('/')[0]))
-        except ValueError:
-            data_frame.set_value(index,'r_TD',int(rows['r_TD'].split(' of ')[0]))
+            data_frame.set_value(index,'r_TD',int(rows['r_TD'].split('/')[1]))
+        except (ValueError, IndexError):
+            data_frame.set_value(index,'r_TD',int(rows['r_TD'].split(' of ')[1]))
 
-        data_frame.set_value(index,'r_TTLSTR',int(rows['r_TTLSTR'].split('/')[0]))
-        data_frame.set_value(index,'r_SIGSTR',int(rows['r_SIGSTR'].split('/')[0]))
-        data_frame.set_value(index,'r_SIGSTR_PRCT',int(rows['r_SIGSTR_PRCT'].strip('%')))
-        data_frame.set_value(index,'r_TD_PRCT',int(rows['r_TD_PRCT'].strip('%')))
+        #data_frame.set_value(index,'r_TTLSTR',float(int(rows['r_TTLSTR'].split('/')[0])/int(rows['r_TTLSTR'].split('/')[1])))
+        data_frame.set_value(index,'r_SIGSTR',int(rows['r_SIGSTR'].split('/')[1]))
+        data_frame.set_value(index,'r_SIGSTR_PRCT',p2f(rows['r_SIGSTR_PRCT']))
+        data_frame.set_value(index,'r_TD_PRCT',p2f(rows['r_TD_PRCT']))
 
+        try:
+            data_frame.set_value(index,'b_TD',int(rows['b_TD'].split('/')[1]))
+        except (ValueError, IndexError):
+            data_frame.set_value(index,'b_TD',int(rows['b_TD'].split(' of ')[1]))
+
+        #data_frame.set_value(index,'b_TTLSTR',float(int(rows['b_TTLSTR'].split('/')[0])/int(rows['b_TTLSTR'].split('/')[1])))
+        data_frame.set_value(index,'b_SIGSTR',float(int(rows['b_SIGSTR'].split('/')[0])/int(rows['b_SIGSTR'].split('/')[1])))
+        data_frame.set_value(index,'b_SIGSTR_PRCT',p2f(rows['b_SIGSTR_PRCT']))
+        data_frame.set_value(index,'b_TD_PRCT',p2f(rows['b_TD_PRCT']))
     #data_frame_red = pd.read_sql(red_query, connection)
     #data_frame_blue= pd.read_sql(blue_query, connection)
-    print(data_frame)
+    print(data_frame.to_string)
 
-    feature_col = ['winner', 'end_round', 'r_KD', 'r_PASS', 'r_SIGSTR', 'r_SIGSTR_PRCT', 'r_SUB', 'r_TD', 'r_TD_PRCT', 'r_TTLSTR']
+    feature_col = ['b_KD', 'b_PASS', 'b_SIGSTR', 'b_SIGSTR_PRCT', 'b_SUB', 'b_TD', 'b_TD_PRCT',
+            'r_KD', 'r_PASS', 'r_SIGSTR', 'r_SIGSTR_PRCT', 'r_SUB', 'r_TD', 'r_TD_PRCT']
+
 
     X = data_frame[feature_col]
-    y = data_frame.winner
+    y = data_frame.r_win
     #split X and y into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.25, random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.50, random_state=0)
 
     # instantiate the model (using the default parameters)
     logreg = LogisticRegression()
@@ -65,7 +88,8 @@ def main():
     print(y_pred)
     cnf_matrix = metrics.confusion_matrix(y_test, y_pred)
     print(cnf_matrix)
-
-
+    print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+    print("Precision:",metrics.precision_score(y_test, y_pred))
+    print("Recall:",metrics.recall_score(y_test, y_pred))
 if __name__ == '__main__':
     main()
