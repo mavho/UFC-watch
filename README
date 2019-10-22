@@ -1,28 +1,24 @@
-
 So I want a UFC api that will specifically pull data from live fights.
 UPDATE:
-The UFC have finally barred people from srapping their site... I may
-have to rebuild using sherdog. It really is a shame.
+So functionality for this will be a little different.
+This is currently a backend framework for a fight predicter.
+I don't really have any experience in data science, but I"m more interested in building the api.
 
+Currently I have data of a lot of fights.
+Currently api is very bare bones, but more functionality will be provided.
 
-Where can i pull this data?
-    UFC live stats page, possibly
-    sherdog?
-    mma sites?
+TODO:
+Make prediction model better.
+More routes for the api.
+Deploy on some server (AWS, Azure, what ever), and create an autonomous framework.
 
-How can I: ufc doesn't seem to have its own endpoints
-    HTML parsing seems to be the way.
+Do front end.
 
+What I want completed:
+A site where users can see the upcoming UFC fight, and the site - server, whatever, will
+give the users a fight prediction for that fight. 
 
-This API will be for scrapping information on live fights
-
-Funct:
-    (probably want to implement filter funct later)
-    Given that a card is going on right now
-    Get a list of fights on the card
-        :list may have fighters, results, etc
-    get current fight data 
-        :fighters fighting
-        :time? may be possible
-        :stats (strikes, grappling, etc)
-        
+Currently:
+I'm still in school, and this is a busy quarter. However this is a project I want to complete by,
+this quarter so I'll try to give weekly updates. Working on a distributed systems project as well as
+an android video game.
