@@ -13,14 +13,14 @@ from sklearn import metrics
 def p2f(str):
     return(float(str.strip('%'))/100)
 
-def populate_dataframes(data_frame, in_fighters, blue_fighter, red_fighter):
+def populate_dataframes(data_frame, red_fighter, blue_fighter,connection):
+    #blue fighter, red fighter
     #vars to calculate avgs of respective fighters
-    avg_rsigstr = avg_rsigstr_prct = avg_rTD_prct = avg_rTD = avg_rKD = avg_rpass = avg_rsub = avg_rttlstr = 0 
-    avg_bsigstr = avg_bsigstr_prct = avg_bTD_prct = avg_bTD = avg_bKD = avg_bpass = avg_bsub = avg_bttlstr = 0 
+    avg_rsigstr = avg_rsigstr_prct = avg_rTD_prct = avg_rTD = avg_rKD = avg_rpass = avg_rsub = avg_rttlstr = avg_rttlstr_prct = 0 
+    avg_bsigstr = avg_bsigstr_prct = avg_bTD_prct = avg_bTD = avg_bKD = avg_bpass = avg_bsub = avg_bttlstr = avg_bttlstr_prct = 0 
     #count how many fights each fighter had
     red_cnt = 0
     blue_cnt = 0
-
     for index, rows in data_frame.iterrows():
         if(rows['winner'] == rows['blue_fighter']):
             data_frame.at[index, 'b_win']=int(1)
@@ -40,7 +40,10 @@ def populate_dataframes(data_frame, in_fighters, blue_fighter, red_fighter):
             TD = int(rows['r_TD'].split('of')[1])
         TD_PRCT = p2f(rows['r_TD_PRCT'])
         TTLSTR = int(rows['r_TTLSTR'].split('/')[1])
-        TTLSTR_PRCT = float(int(rows['r_TTLSTR'].split('/')[0])/int(rows['r_TTLSTR'].split('/')[1]))
+        try:
+            TTLSTR_PRCT = float(int(rows['r_TTLSTR'].split('/')[0])/int(rows['r_TTLSTR'].split('/')[1]))
+        except ZeroDivisionError:
+            TTLSTR_PRCT = float(0)
         SIGSTR = int(rows['r_SIGSTR'].split('/')[1])
         SIGSTR_PRCT = p2f(rows['r_SIGSTR_PRCT'])
 
@@ -60,6 +63,7 @@ def populate_dataframes(data_frame, in_fighters, blue_fighter, red_fighter):
             avg_rpass += rows['r_PASS']
             avg_rsub += rows['r_SUB']
             avg_rttlstr += TTLSTR  
+            avg_rttlstr_prct +=TTLSTR_PRCT
             red_cnt +=1
 
         if rows['red_fighter'] == blue_fighter:
@@ -71,9 +75,10 @@ def populate_dataframes(data_frame, in_fighters, blue_fighter, red_fighter):
             avg_bpass += rows['b_PASS']
             avg_bsub += rows['b_SUB']
             avg_bttlstr += TTLSTR  
+            avg_bttlstr_prct += TTLSTR_PRCT
             blue_cnt+=1
 
-        #################Blue side#################################################    
+            #################Blue side#################################################    
         TD=0
         try:
             TD = int(rows['b_TD'].split('/')[1])
@@ -81,7 +86,10 @@ def populate_dataframes(data_frame, in_fighters, blue_fighter, red_fighter):
             TD = int(rows['b_TD'].split('of')[1])
         TD_PRCT = p2f(rows['b_TD_PRCT'])
         TTLSTR = int(rows['b_TTLSTR'].split('/')[1])
-        TTLSTR_PRCT = float(int(rows['b_TTLSTR'].split('/')[0])/int(rows['b_TTLSTR'].split('/')[1]))
+        try:
+            TTLSTR_PRCT = float(int(rows['b_TTLSTR'].split('/')[0])/int(rows['b_TTLSTR'].split('/')[1]))
+        except (ZeroDivisionError):
+            TTLSTR_PRCT = float(0)
         SIGSTR = int(rows['b_SIGSTR'].split('/')[1])
         SIGSTR_PRCT = p2f(rows['b_SIGSTR_PRCT'])
 
@@ -102,6 +110,7 @@ def populate_dataframes(data_frame, in_fighters, blue_fighter, red_fighter):
             avg_bpass += rows['b_PASS']
             avg_bsub += rows['b_SUB']
             avg_bttlstr += TTLSTR  
+            avg_bttlstr_prct += TTLSTR_PRCT
             blue_cnt+=1
         if rows['blue_fighter'] == red_fighter:
             avg_rTD += TD
@@ -112,74 +121,84 @@ def populate_dataframes(data_frame, in_fighters, blue_fighter, red_fighter):
             avg_rpass += rows['r_PASS']
             avg_rsub += rows['r_SUB']
             avg_rttlstr += TTLSTR  
+            avg_rttlstr_prct += TTLSTR_PRCT
             red_cnt +=1
-    return in_fighters.append({'blue_fighter':blue_fighter,'b_KD':avg_bKD/blue_cnt, 'b_PASS':avg_bpass/blue_cnt,
-     'b_SIGSTR':avg_bsigstr/blue_cnt, 'b_SIGSTR_PRCT':avg_bsigstr_prct/blue_cnt
-        , 'b_SUB':avg_bsub/blue_cnt, 'b_TD': avg_bTD/blue_cnt, 'b_TD_PRCT':avg_bTD_prct/blue_cnt
-        ,'red_fighter':red_fighter,'r_KD':avg_rKD/red_cnt, 'r_PASS':avg_rpass/red_cnt,
-         'r_SIGSTR':avg_rsigstr/red_cnt, 'r_SIGSTR_PRCT':avg_rsigstr_prct/red_cnt, 'r_SUB':avg_rsub/red_cnt,
-          'r_TD':avg_rTD/red_cnt, 'r_TD_PRCT':avg_rTD_prct/red_cnt},ignore_index=True)
+
+    if(blue_fighter == '' and red_fighter == ''):
+        return {}
+    else:
+        return {'blue_fighter':blue_fighter,'b_KD':avg_bKD/blue_cnt, 'b_PASS':avg_bpass/blue_cnt,
+            'b_SIGSTR':avg_bsigstr/blue_cnt, 'b_SIGSTR_PRCT':avg_bsigstr_prct/blue_cnt
+            , 'b_SUB':avg_bsub/blue_cnt, 'b_TD': avg_bTD/blue_cnt, 'b_TD_PRCT':avg_bTD_prct/blue_cnt, 'b_TTLSTR':avg_bttlstr/blue_cnt,'b_TTLSTR_PRCT':avg_bttlstr_prct/blue_cnt,
+            'red_fighter':red_fighter,'r_KD':avg_rKD/red_cnt, 'r_PASS':avg_rpass/red_cnt,
+            'r_SIGSTR':avg_rsigstr/red_cnt, 'r_SIGSTR_PRCT':avg_rsigstr_prct/red_cnt, 'r_SUB':avg_rsub/red_cnt,
+            'r_TD':avg_rTD/red_cnt, 'r_TD_PRCT':avg_rTD_prct/red_cnt,
+            'r_TTLSTR':avg_rttlstr/red_cnt,'r_TTLSTR_PRCT':avg_rttlstr_prct/red_cnt}
+
+#So no matter which bout, I want to train the model based on weight classes.
+def train_weight_class(weight_dataframe):
+    return weight_dataframe
+
 
 
 def main():
     #db i'm accessing
     db_engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
     connection = db_engine.connect()
-
     #weight class
     weight_class = 'Welterweight'
     blue_payload = 'blue_fighter,b_KD, b_PASS, b_SIGSTR, b_SIGSTR_PRCT, b_SUB, b_TD, b_TD_PRCT, b_TTLSTR'
     red_payload = 'red_fighter, r_KD, r_PASS, r_SIGSTR, r_SIGSTR_PRCT, r_SUB, r_TD, r_TD_PRCT, r_TTLSTR'
     stats_payload = 'winner, loser, end_round, time, method, result'
 
-    ###
-    #currently logistic regression doesn't distinguish on who the fighter is
-    #there's no concept or reach, winstreak, or anything
-    #Later iterations will include winstreaks
-    #furthermore data frames will be created based on the fighter as well as the opponent.
-    ###
-    #data_frame = pd.read_sql(red_query + ' UNION ' + blue_query + ' UNION ' + stats_payload, connection)
-    blue_fighter = 'Gregor Gillespie'
-    red_fighter = 'Kevin Lee'
+    #(blue, red)
+    fight_list = [('Gregor Gillespie','Kevin Lee'), ('Edmen Shahbazyan','Brad Tavares'), ('Johnny Walker', 'Corey Anderson')]
 
 
     ###dataframe for fighter averages in the predict list
-    in_fighters = pd.DataFrame(columns=['blue_fighter','b_KD', 'b_PASS', 'b_SIGSTR', 'b_SIGSTR_PRCT', 'b_SUB', 'b_TD', 'b_TD_PRCT'
-            ,'red_fighter','r_KD', 'r_PASS', 'r_SIGSTR', 'r_SIGSTR_PRCT', 'r_SUB', 'r_TD', 'r_TD_PRCT'])
-#    in_fighters.at[0, 'blue_fighter']=blue_fighter
-#    in_fighters.at[0, 'red_fighter']=red_fighter
+    columns = ['blue_fighter','b_KD', 'b_PASS', 'b_SIGSTR', 'b_SIGSTR_PRCT', 'b_SUB', 'b_TD', 'b_TD_PRCT','b_TTLSTR', 'b_TTLSTR_PRCT'
+            ,'red_fighter','r_KD', 'r_PASS', 'r_SIGSTR', 'r_SIGSTR_PRCT', 'r_SUB', 'r_TD', 'r_TD_PRCT', 'r_TTLSTR', 'r_TTLSTR_PRCT']
             
     #query for weight class
     weight_query = "SELECT * FROM bouts WHERE weight_class='" + weight_class +"'"
 
+
+    #What I will use to train the data will be in a method called train_weight, which will train the
+    #logistic reg model by weight class. THough weight classes are different, it should be relatively indicative
+    #I think the medians will be womens's strawweight, men's featherweight, welterweight, light heavy weight
+    #reasons: 
+    data = []
+    for(blue_fighter, red_fighter) in fight_list:
+        blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + blue_fighter +"' or red_fighter='" + blue_fighter + "'"
+        red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + red_fighter +"' or red_fighter='" + red_fighter + "'"
+        union_query = blue_fighter_query + ' UNION ' + red_fighter_query
+        fighter_frame = pd.read_sql(union_query, connection)
+        fighter_frame["b_win"] = 0
+        fighter_frame["r_win"] = 0
+        #out_fighters is a dataframe with all the averages of the to-be predicted fighters
+        data.append(populate_dataframes(fighter_frame, blue_fighter,red_fighter, connection))
+
+    out_fighters = pd.DataFrame(data,columns=columns)
     #queries for the fighters in some bout
-    blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + blue_fighter +"' or red_fighter='" + blue_fighter + "'"
-    red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + red_fighter +"' or red_fighter='" + red_fighter + "'"
+    weight_frame = pd.read_sql(weight_query, connection)
+    weight_frame["b_win"] = 0
+    weight_frame["r_win"] = 0
 
-    union_query = blue_fighter_query + ' UNION ' + red_fighter_query
-
-
-    data_frame = pd.read_sql(union_query, connection)
-
-    data_frame["b_win"] = 0;
-    data_frame["r_win"] = 0;
-    out_fighters = populate_dataframes(data_frame, in_fighters, blue_fighter, red_fighter)
+    populate_dataframes(weight_frame, '','', connection)
+#    print(weight_frame)
     
-    print(data_frame)
-    print(out_fighters)
-    in_fighters._clear_item_cache()
+#   print(out_fighters)
 
     ##################################################################################################
 
-    feature_col = ['b_KD', 'b_PASS', 'b_SIGSTR', 'b_SIGSTR_PRCT', 'b_SUB', 'b_TD', 'b_TD_PRCT', 'b_TTLSTR', 'b_TTLSTR_PRCT'
+    feature_col = ['b_KD', 'b_PASS', 'b_SIGSTR', 'b_SIGSTR_PRCT', 'b_SUB', 'b_TD', 'b_TD_PRCT', 'b_TTLSTR', 'b_TTLSTR_PRCT',
             'r_KD', 'r_PASS', 'r_SIGSTR', 'r_SIGSTR_PRCT', 'r_SUB', 'r_TD', 'r_TD_PRCT', 'r_TTLSTR', 'r_TTLSTR_PRCT']
 
-    sys.exit()
-
-    X = data_frame[feature_col]
-    y = data_frame.r_win
+    X = weight_frame[feature_col]
+    y = weight_frame.r_win
 
     #split X and y into training and testing sets
+    #X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.25, random_state=0)
     X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.25, random_state=0)
 
 
@@ -191,29 +210,26 @@ def main():
     #
     y_pred=logreg.predict(X_test)
 
-    print(y_test)
+    #print(y_test)
     print('################################################################################')
-    print(y_pred)
-    print(X_test)
+    #print(y_pred)
+    #print(X_test)
 
     count = 0;
-    for index,rows in X_test.iterrows():
-        print(data_frame.loc[index]['blue_fighter'] + ' : ' + data_frame.loc[index]['red_fighter'])
-        if y_pred[count] == 1:
-            print('winner: ' +data_frame.loc[index]['red_fighter'])
-        else:
-            print('winner: ' + data_frame.loc[index]['blue_fighter'])
-        print('actual winner: ' + data_frame.loc[index]['winner'])
-        count += 1
+    #for index,rows in X_test.iterrows():
+    #    print(weight_frame.loc[index]['blue_fighter'] + ' : ' + weight_frame.loc[index]['red_fighter'])
+    #    if y_pred[count] == 1:
+    #        print('predicted winner: ' +weight_frame.loc[index]['red_fighter'])
+    #    else:
+    #        print('predicted winner: ' + weight_frame.loc[index]['blue_fighter'])
+    #    print('actual winner: ' + weight_frame.loc[index]['winner'])
+    #    count += 1
+    #print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+    #print("Precision:",metrics.precision_score(y_test, y_pred))
+    #print("Recall:",metrics.recall_score(y_test, y_pred))
 
-
-
-
-#    cnf_matrix = metrics.confusion_matrix(y_test, y_pred)
-#    print(cnf_matrix)
-    print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
-    print("Precision:",metrics.precision_score(y_test, y_pred))
-    print("Recall:",metrics.recall_score(y_test, y_pred))
+    prediction = logreg.predict(out_fighters[feature_col])
+    print(prediction)
 
 if __name__ == '__main__':
     main()
