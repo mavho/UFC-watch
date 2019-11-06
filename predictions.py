@@ -152,7 +152,7 @@ def main():
     stats_payload = 'winner, loser, end_round, time, method, result'
 
     #(blue, red)
-    fight_list = [('Gregor Gillespie','Kevin Lee'), ('Edmen Shahbazyan','Brad Tavares'), ('Johnny Walker', 'Corey Anderson')]
+    fight_list = [('Gregor Gillespie','Kevin Lee'), ('Edmen Shahbazyan','Brad Tavares'), ('Johnny Walker', 'Corey Anderson'),('Nate Diaz', 'Jorge Masvidal')]
 
 
     ###dataframe for fighter averages in the predict list
@@ -160,7 +160,7 @@ def main():
             ,'red_fighter','r_KD', 'r_PASS', 'r_SIGSTR', 'r_SIGSTR_PRCT', 'r_SUB', 'r_TD', 'r_TD_PRCT', 'r_TTLSTR', 'r_TTLSTR_PRCT']
             
     #query for weight class
-    weight_query = "SELECT * FROM bouts WHERE weight_class='" + weight_class +"'"
+    weight_query = "SELECT * FROM bouts WHERE weight_class='Welterweight' or weight_class='Light Heavyweight' or weight_class='Bantamweight'"
 
 
     #What I will use to train the data will be in a method called train_weight, which will train the
@@ -215,7 +215,7 @@ def main():
     #print(y_pred)
     #print(X_test)
 
-    count = 0;
+    count = 0
     #for index,rows in X_test.iterrows():
     #    print(weight_frame.loc[index]['blue_fighter'] + ' : ' + weight_frame.loc[index]['red_fighter'])
     #    if y_pred[count] == 1:
@@ -224,12 +224,21 @@ def main():
     #        print('predicted winner: ' + weight_frame.loc[index]['blue_fighter'])
     #    print('actual winner: ' + weight_frame.loc[index]['winner'])
     #    count += 1
-    #print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
-    #print("Precision:",metrics.precision_score(y_test, y_pred))
-    #print("Recall:",metrics.recall_score(y_test, y_pred))
+    print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+    print("Precision:",metrics.precision_score(y_test, y_pred))
+    print("Recall:",metrics.recall_score(y_test, y_pred))
 
     prediction = logreg.predict(out_fighters[feature_col])
     print(prediction)
+    count = 0
+    for res in prediction:
+        if res == 1:
+            print(fight_list[count][1:])
+        else:
+            print(fight_list[count][:1])
+        count+=1
+
+
 
 if __name__ == '__main__':
     main()
