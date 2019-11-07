@@ -1,18 +1,16 @@
-So I want a UFC api that will specifically pull data from live fights.
-UPDATE:
-So functionality for this will be a little different.
-This is currently a backend framework for a fight predicter.
-I don't really have any experience in data science, but I"m more interested in building the api.
-
-Currently I have data of a lot of fights.
-Currently api is very bare bones, but more functionality will be provided.
-
 TODO:
 Make prediction model better.
 More routes for the api.
 Deploy on some server (AWS, Azure, what ever), and create an autonomous framework.
 
 make the rotating proxy better... probably make another webscraper for that hahahah
+
+Create another proxy method to get a list of upcoming fights
+
+Make it multithreaded.
+Make it distributed (for fun).
+
+Pickle the logreg object so I don't have to re calculating it.
 
 Do front end.
 
