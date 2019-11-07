@@ -1,4 +1,4 @@
-from UFC_handler import db
+from ufc_api import db
 
 #Event table
 class Events(db.Model):

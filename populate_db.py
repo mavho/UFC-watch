@@ -1,4 +1,4 @@
-from UFC_handler import db, ConfigURL 
+from ufc_api import db, ConfigURL 
 from UFC_stats_parse import UFC_Stats_Parser
 from models import Events, Bouts
 
@@ -19,7 +19,7 @@ def update_events_table(event_list):
 def populate_bouts_fighters_table(parser,event_data):
     #Only the first 10 bouts
     #stopped at 140
-    for bout in event_data[130:140]:
+    for bout in event_data[1:2]:
         print(bout['event'], flush=True)
         event = Events.query.filter_by(event=bout['event']).first()
         if event is None:
@@ -48,6 +48,7 @@ def populate_bouts_fighters_table(parser,event_data):
                 ))
     db.session.commit()
 
+
 def main():
     parser = UFC_Stats_Parser()
     configobj = ConfigURL()
@@ -56,10 +57,9 @@ def main():
     #events list page
     data_bytes = parser.getRawHTML(configobj.url)
     result = parser.generate_url_list(data_bytes) 
-#    populate_events_table(result)
     print('populate bouts table',flush=True)
-#    populate_bouts_fighters_table(parser,result)
-    update_events_table(result)
+    #update_events_table(result)
+    populate_bouts_fighters_table(parser,result)
 
 
 

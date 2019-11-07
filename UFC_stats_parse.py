@@ -8,21 +8,16 @@ class UFC_Stats_Parser():
     working_proxy = ''
     #used to get the raw bytes from a webpage
     def getRawHTML(self,url):
-        #proxy_list= [ 
-        #    'http://118.173.232.170:44029',
-        #    'http://177.53.57.154:57894',
-        #    'http://96.9.236.243:3120',
-        #    'http://96.9.215.221:3120'
-        #]
-        proxy_list = [ 
-            'http://12.218.209.130:53281',
-            'http://191.96.42.184:3129',
-            'http://66.82.22.79:80',
-            'http://191.96.42.184:3129']
+        proxy_list = [
+            'http://165.22.179.194:80',
+            'http://50.246.4.13:54325', 
+            'http://198.204.227.235:2204',
+            'http://13.66.25.52:80'
+            ]
         for proxy in proxy_list[:]:
             authinfo = urllib.request.HTTPBasicAuthHandler()
             if self.working_proxy is not '':
-                proxy_support = urllib.request.ProxyHandler({'http': working_proxy})
+                proxy_support = urllib.request.ProxyHandler({'http': self.working_proxy})
             else:
                 proxy_support = urllib.request.ProxyHandler({'http': proxy})
             opener = urllib.request.build_opener(proxy_support,authinfo,urllib.request.CacheFTPHandler)
@@ -48,7 +43,7 @@ class UFC_Stats_Parser():
                 print(e ,flush=True)
                 self.working_proxy = ''
                 #proxy_list.remove(proxy)
-                time.sleep(1)
+                time.sleep(4)
         #endpoint = request.get(url)
         #mybytes = endpoint.content
         return mybytes
