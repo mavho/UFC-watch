@@ -4,15 +4,18 @@ More routes for the api.
 Deploy on some server (AWS, Azure, what ever), and create an autonomous framework.
 
 make the rotating proxy better... probably make another webscraper for that hahahah
-
 Create another proxy method to get a list of upcoming fights
 
 Make it multithreaded.
 Make it distributed (for fun).
 
-Pickle the logreg object so I don't have to re calculating it.
 
 Do front end.
+
+What's finished:
+You can access this api at
+http://3.134.85.95/api/winners to receive a list of all predicted winners for the next fight.
+Currently there is only one endpoint.
 
 What I want completed:
 A site where users can see the upcoming UFC fight, and the site - server, whatever, will
