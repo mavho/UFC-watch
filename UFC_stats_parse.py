@@ -8,12 +8,20 @@ class UFC_Stats_Parser():
     working_proxy = ''
     #used to get the raw bytes from a webpage
     def getRawHTML(self,url):
+        success=False
         proxy_list = [
-            'http://165.22.179.194:80',
-            'http://50.246.4.13:54325', 
-            'http://198.204.227.235:2204',
-            'http://13.66.25.52:80'
+            'http://45.55.106.89:80',
+            'http://216.189.145.240:80',
+            'http://64.251.21.59:80',
+            'http://134.209.14.170:8080',
             ]
+        req = urllib.request.Request(
+            url = url,
+            data = None,
+            headers = {
+                'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'
+            },
+        )
         for proxy in proxy_list[:]:
             authinfo = urllib.request.HTTPBasicAuthHandler()
             if self.working_proxy is not '':
@@ -24,13 +32,6 @@ class UFC_Stats_Parser():
             print('opener', flush=True)
 
             #urllib.request.install_opener(opener)
-            req = urllib.request.Request(
-                url = url,
-                data = None,
-                headers = {
-                    'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'
-                },
-            )
             try:
                 endpoint = opener.open(req)
                 #endpoint = urllib.request.urlopen(req) 
@@ -38,14 +39,15 @@ class UFC_Stats_Parser():
                 endpoint.close()
                 print('Able to open ' + proxy,flush=True)
                 self.working_proxy = proxy
+                success=True
                 break
             except Exception as e:
+                success=False
                 print(e ,flush=True)
                 self.working_proxy = ''
                 #proxy_list.remove(proxy)
                 time.sleep(4)
-        #endpoint = request.get(url)
-        #mybytes = endpoint.content
+        #endpoint = request.get(url) #mybytes = endpoint.content
         return mybytes
     
     #returns a json from the events page of ufc_stats with query set to all.
@@ -85,6 +87,8 @@ class UFC_Stats_Parser():
             fight_list.append(fight_stats)
 
         return fight_list
+    
+    
     #parse the contents section of a td, populates fight_stats
     #Do not call this!
     def parse_listing(self, data, fight_stats):
@@ -152,24 +156,38 @@ class UFC_Stats_Parser():
         fight_stats['Red'] = fighter1_stats
         fight_stats['Blue'] = fighter2_stats
 
+    def generate_Event_Bout_list(self,link):
+        data_bytes = self.getRawHTML('http://www.ufcstats.com/event-details/b09890ba7ce1d1e2')
+        soup = BeautifulSoup(data_bytes, 'lxml')
+        payload = soup.find('tbody', {'class', 'b-fight-details__table-body'})
+
+        payload = payload.find_all('tr', {'class', 'b-fight-details__table-row'})
+        
+        fight_list = []
+        for listing in payload:
+            fight_stats = {}
+            fighter_1 = listing[1].contents[1].get_text(strip=True)
+            fighter_2 = listing[1].contents[3].get_text(strip=True)
+            bout = (fighter_1,fighter_2)
+            fight_list.append(fight_stats)
+
+        return fight_list
 
 
 def main():
     #url = 'http://www.ufcstats.com/statistics/events/completed?page=all'
-    url = 'http://www.ufcstats.com/fight-details/357a34207d70da69'
+    url = 'http://http://www.ufcstats.com/statistics/events/completed'
     parser = UFC_Stats_Parser()
     print('Get current fights test------------------')    
 
 
     #url = 'http://www.ufcstats.com/event-details/94a5aaf573f780ad'
     data_bytes = parser.getRawHTML(url)
-    #result = parser.parse_event_fights(data_bytes)
-    #result = parser.generate_url_list(data_bytes)
-    payload = {}
-    j1 = {}
-    j2 = {}
-    parser.parse_striking_stats(data_bytes,payload,j1, j2)
-    print(payload)
+    url_list = parser.generate_url_list(data_bytes)
+    fight_list=parser.generate_Event_Bout_list(url_list[0])
+    print(fight_list)
+
+
 
 
 if __name__ == '__main__':

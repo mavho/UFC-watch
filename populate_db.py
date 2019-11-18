@@ -8,9 +8,9 @@ def populate_events_table(event_list):
         db.session.add(Events(event=event['event']))
     
     db.session.commit()
+
 #gets new event and commits to db
 def update_events_table(event_list):
-    
     e = Events(event=event_list[0]['event'])
     db.session.add(e)
     db.session.commit()
@@ -19,7 +19,7 @@ def update_events_table(event_list):
 def populate_bouts_fighters_table(parser,event_data):
     #Only the first 10 bouts
     #stopped at 140
-    for bout in event_data[1:2]:
+    for bout in event_data[1:3]:
         print(bout['event'], flush=True)
         event = Events.query.filter_by(event=bout['event']).first()
         if event is None:
@@ -58,13 +58,9 @@ def main():
     data_bytes = parser.getRawHTML(configobj.url)
     result = parser.generate_url_list(data_bytes) 
     print('populate bouts table',flush=True)
+    #update new events
     #update_events_table(result)
-    populate_bouts_fighters_table(parser,result)
-
-
-
-
-
-
+    #populate bouts for those events
+    #populate_bouts_fighters_table(parser,result)
 if __name__ == '__main__':
     main()
