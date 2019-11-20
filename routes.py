@@ -24,7 +24,6 @@ class PredictionsResource(Resource):
         return jsonify({'predicted wins': data, 'Event':'UFC Fight Night: Overeem vs. Rozenstruik'})
 
 api.add_resource(PredictionsResource,'/winners')
-api.add_resource(Test, '/test')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0")
