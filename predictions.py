@@ -246,8 +246,11 @@ def main():
     pm = Predictions()
     #pm.train_predictionModel()
     data = pm.predict()
-    print(data)
+    to_json={}
+    to_json['bouts']=data
+    with(open('pred_fights.json','w')) as f:
+            json.dump(to_json,f)
 
 
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()

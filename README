@@ -1,16 +1,3 @@
-TODO:
-Make prediction model better.
-More routes for the api.
-Deploy on some server (AWS, Azure, what ever), and create an autonomous framework.
-
-make the rotating proxy better... probably make another webscraper for that hahahah
-Create another proxy method to get a list of upcoming fights
-
-Make it multithreaded.
-Make it distributed (for fun).
-
-
-Do front end.
 
 What's finished:
 You can access this api at
@@ -20,6 +7,21 @@ Currently there is only one endpoint.
 What I want completed:
 A site where users can see the upcoming UFC fight, and the site - server, whatever, will
 give the users a fight prediction for that fight. 
+TODO:
+More routes for the api.
+	-More routes include
+		1. Search 2 fighters and predict who would win between  difficulty 6
+		2. Return a JSON of bouts based on a query 		difficulty 4
+	-Essentially, this is an API for an SQL, however instead of letting users to directly interact with my DB, they can only pull data.
+	-The only thing that will interact with my DB are the autonomous scripts located on the server.
+
+make the rotating proxy better... probably make another webscraper for that hahahah
+
+Make it multithreaded.
+Make it distributed (for fun).
+
+Do front end.
+
 
 Currently:
 I'm still in school, and this is a busy quarter. However this is a project I want to complete by,

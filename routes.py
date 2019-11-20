@@ -6,23 +6,29 @@ from flask_restful import Resource, Api
 from ufc_api import app, db, api
 from UFC_stats_parse import UFC_Stats_Parser as UFCParser
 import json
+import subprocess
 ###
 ###Set up app, config url, parser, db, and migration
 ###
 
-from predictions import Predictions
+#from predictions import Predictions
 
 #configobj = ConfigURL()
 parser = UFCParser()
 
-class Predictions(Resource):
+class PredictionsResource(Resource):
     def get(self):
-        return {'hello':'world'}
 
-api.add_resource(Predictions,'/hello')
+        #data = trained_model.predict()
+        subprocess.call(['python3','predictions.py'])
+        with open('/var/www/UFC_API/pred_fights.json') as jf:
+            data = json.load(jf)
+        return jsonify({'predicted wins': data, 'Event':'UFC Fight Night: Overeem vs. Rozenstruik'})
+class Test(Resource):
+    def get(self):
+        return({'Hello':'World'})
 
-@app.route('/API/v1/predictions',methods=['GET'])
-def get_event_list():
-    pm = Predictions()
-    data = pm.predict() 
-    return jsonify({'events': data})
+api.add_resource(PredictionsResource,'/winners')
+api.add_resource(Test, '/test')
+if __name__ == "__main__":
+    app.run(host="0.0.0.0")
