@@ -11,7 +11,6 @@ db = SQLAlchemy(app)
 migrate = Migrate(app,db) 
 import routes, models
 
-
 class ConfigURL():
     def __init__(self):
         #self.url = 'http://www.ufcstats.com/event-details/94a5aaf573f780ad'

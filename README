@@ -1,0 +1,29 @@
+
+What's finished:
+You can access this api at
+http://3.134.85.95/api/winners to receive a list of all predicted winners for the next fight.
+Currently there is only one endpoint.
+
+What I want completed:
+A site where users can see the upcoming UFC fight, and the site - server, whatever, will
+give the users a fight prediction for that fight. 
+TODO:
+More routes for the api.
+	-More routes include
+		1. Search 2 fighters and predict who would win between  difficulty 6
+		2. Return a JSON of bouts based on a query 		difficulty 4
+	-Essentially, this is an API for an SQL, however instead of letting users to directly interact with my DB, they can only pull data.
+	-The only thing that will interact with my DB are the autonomous scripts located on the server.
+
+make the rotating proxy better... probably make another webscraper for that hahahah
+
+Make it multithreaded.
+Make it distributed (for fun).
+
+Do front end.
+
+
+Currently:
+I'm still in school, and this is a busy quarter. However this is a project I want to complete by,
+this quarter so I'll try to give weekly updates. Working on a distributed systems project as well as
+an android video game.

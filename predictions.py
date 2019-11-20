@@ -1,10 +1,10 @@
+from ufc_api import db
 from config import Config
 from sqlalchemy import create_engine
-from ufc_api import db
 from models import Events, Bouts
 import pandas as pd
 import pickle
-import sys, json
+import sys
 
 #sklearn modules
 from sklearn.model_selection import train_test_split
@@ -242,9 +242,7 @@ class Predictions():
         return payload 
 
 def main():
-    #url = 'http://www.ufcstats.com/statistics/events/completed?page=all'
     pm = Predictions()
-    #pm.train_predictionModel()
     data = pm.predict()
     to_json={}
     to_json['bouts']=data

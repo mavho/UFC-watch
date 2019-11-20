@@ -1,5 +1,4 @@
 from ufc_api import db
-
 #Event table
 class Events(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,4 +41,3 @@ class Bouts(db.Model):
     b_PASS= db.Column(db.Integer, index=True)
     r_PASS= db.Column(db.Integer, index=True)
 
-    

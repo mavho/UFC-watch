@@ -1,0 +1,5 @@
+{
+    "python.linting.pylintEnabled": true,
+    "python.pythonPath": "c:\\Users\\maverick\\Documents\\VS_Workspace\\UFC_API\\KENV\\Scripts\\python.exe",
+    "python.formatting.provider": "yapf"
+}
