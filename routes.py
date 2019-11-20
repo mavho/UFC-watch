@@ -11,8 +11,6 @@ import subprocess
 ###Set up app, config url, parser, db, and migration
 ###
 
-#from predictions import Predictions
-
 #configobj = ConfigURL()
 parser = UFCParser()
 
@@ -24,11 +22,9 @@ class PredictionsResource(Resource):
         with open('/var/www/UFC_API/pred_fights.json') as jf:
             data = json.load(jf)
         return jsonify({'predicted wins': data, 'Event':'UFC Fight Night: Overeem vs. Rozenstruik'})
-class Test(Resource):
-    def get(self):
-        return({'Hello':'World'})
 
 api.add_resource(PredictionsResource,'/winners')
 api.add_resource(Test, '/test')
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0")

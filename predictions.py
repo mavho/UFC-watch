@@ -242,9 +242,7 @@ class Predictions():
         return payload 
 
 def main():
-    #url = 'http://www.ufcstats.com/statistics/events/completed?page=all'
     pm = Predictions()
-    #pm.train_predictionModel()
     data = pm.predict()
     to_json={}
     to_json['bouts']=data
@@ -252,5 +250,5 @@ def main():
             json.dump(to_json,f)
 
 
-#if __name__ == '__main__':
-#    main()
+if __name__ == '__main__':
+    main()
