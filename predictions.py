@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from models import Events, Bouts
 import pandas as pd
 import pickle
-import sys
+import sys, json
 
 #sklearn modules
 from sklearn.model_selection import train_test_split
@@ -192,23 +192,25 @@ class Predictions():
         print("Precision:",metrics.precision_score(y_test, y_pred))
         print("Recall:",metrics.recall_score(y_test, y_pred))
 
-    def predict(self):
+    def predict(self,event):
         filename = 'trained_Kev.sav'
         loaded_module = pickle.load(open(filename,'rb'))
+        out_json = {}
 
         #(blue, red)
         fobj = open("bout_list.txt", "r")
-        odd=True
+        odd=False
         red_fighter=''
         blue_fighter=''
         fight_list = []
+        out_json['event'] = fobj.readline().strip('\n')
         for line in fobj:
             if(odd):
-                red_fighter = line
-                odd=False
-            elif(not odd):
                 blue_fighter = line
                 fight_list.append((red_fighter.strip('\n'),blue_fighter.strip('\n')))
+                odd=False
+            elif(not odd):
+                red_fighter = line
                 odd=True
 
         data = []
@@ -239,15 +241,16 @@ class Predictions():
             count+=1
             payload.append(fight)
 
-        return payload 
+        out_json['bouts'] = payload
+        return out_json 
 
 def main():
     pm = Predictions()
-    data = pm.predict()
-    to_json={}
-    to_json['bouts']=data
+    event=''
+    data = pm.predict(event)
+    
     with(open('pred_fights.json','w')) as f:
-            json.dump(to_json,f)
+            json.dump(data,f)
 
 
 if __name__ == '__main__':

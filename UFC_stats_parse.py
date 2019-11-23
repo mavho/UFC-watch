@@ -1,33 +1,38 @@
-import json, sys, re, time
+import json, sys, re, time, random
 import urllib.request
+from proxy import Proxy
 from bs4 import BeautifulSoup
 from flask import jsonify
 
 
 class UFC_Stats_Parser():
-    working_proxy = ''
+
+    def __init__(self):
+        self.working_proxy = ''
+        self.proxy_list = []
+        self.generateProxyList(self.proxy_list)
+    
+    def generateProxyList(self, proxy_list):
+        fobj = open("proxy_list.txt", "r")
+        for line in fobj:
+            self.proxy_list.append(Proxy(line))
+
+
     #used to get the raw bytes from a webpage
     def getRawHTML(self,url):
         success=False
-        proxy_list = [
-            'http://45.55.106.89:80',
-            'http://216.189.145.240:80',
-            'http://64.251.21.59:80',
-            'http://134.209.14.170:8080',
-            ]
-        req = urllib.request.Request(
-            url = url,
-            data = None,
-            headers = {
-                'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'
-            },
-        )
-        for proxy in proxy_list[:]:
+        for proxy in self.proxy_list[:]:
+            proxy.generateHeader() 
+            req = urllib.request.Request(
+                url = url,
+                data = None,
+                headers = proxy.header,
+            )
             authinfo = urllib.request.HTTPBasicAuthHandler()
             if self.working_proxy is not '':
                 proxy_support = urllib.request.ProxyHandler({'http': self.working_proxy})
             else:
-                proxy_support = urllib.request.ProxyHandler({'http': proxy})
+                proxy_support = urllib.request.ProxyHandler({'http': proxy.ip})
             opener = urllib.request.build_opener(proxy_support,authinfo,urllib.request.CacheFTPHandler)
             print('opener', flush=True)
 
@@ -37,16 +42,17 @@ class UFC_Stats_Parser():
                 #endpoint = urllib.request.urlopen(req) 
                 mybytes = endpoint.read()
                 endpoint.close()
-                print('Able to open ' + proxy,flush=True)
-                self.working_proxy = proxy
+                print('Able to open ' + proxy.ip,flush=True)
+                self.working_proxy = proxy.ip
                 success=True
+                time.sleep(random.randrange(20))
                 break
             except Exception as e:
                 success=False
                 print(e ,flush=True)
                 self.working_proxy = ''
                 #proxy_list.remove(proxy)
-                time.sleep(4)
+                time.sleep(random.randrange(20))
         #endpoint = request.get(url) #mybytes = endpoint.content
         return mybytes
     
@@ -88,6 +94,22 @@ class UFC_Stats_Parser():
 
         return fight_list
     
+    #This returns a list of all the fighters
+    def generate_event_bout_list(self,payload):
+        soup = BeautifulSoup(payload, 'lxml')
+        payload = soup.find('tbody', {'class', 'b-fight-details__table-body'})
+
+        payload = payload.find_all('tr', {'class', 'b-fight-details__table-row'})
+        
+        fight_list = []
+        for listing in payload:
+            payload = listing.find_all('td')
+            fighter_1 = payload[1].contents[1].get_text(strip=True)
+            fighter_2 = payload[1].contents[3].get_text(strip=True)
+            bout = (fighter_1,fighter_2)
+            fight_list.append(bout)
+
+        return fight_list
     
     #parse the contents section of a td, populates fight_stats
     #Do not call this!
@@ -156,22 +178,6 @@ class UFC_Stats_Parser():
         fight_stats['Red'] = fighter1_stats
         fight_stats['Blue'] = fighter2_stats
 
-    def generate_Event_Bout_list(self,link):
-        data_bytes = self.getRawHTML('http://www.ufcstats.com/event-details/b09890ba7ce1d1e2')
-        soup = BeautifulSoup(data_bytes, 'lxml')
-        payload = soup.find('tbody', {'class', 'b-fight-details__table-body'})
-
-        payload = payload.find_all('tr', {'class', 'b-fight-details__table-row'})
-        
-        fight_list = []
-        for listing in payload:
-            fight_stats = {}
-            fighter_1 = listing[1].contents[1].get_text(strip=True)
-            fighter_2 = listing[1].contents[3].get_text(strip=True)
-            bout = (fighter_1,fighter_2)
-            fight_list.append(fight_stats)
-
-        return fight_list
 
 
 def main():
