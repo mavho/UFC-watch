@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, abort, make_response, request, url_for
+from flask_cors import CORS
 from flask_restful import Resource, Api
 #from flask_sqlalchemy import SQLAlchemy
 #from flask_migrate import Migrate
@@ -10,6 +11,7 @@ import subprocess
 ###
 ###Set up app, config url, parser, db, and migration
 ###
+cors = CORS(app, resources={r'/winners':{"origins":"*"}})
 
 #configobj = ConfigURL()
 parser = UFCParser()
@@ -17,11 +19,12 @@ parser = UFCParser()
 class PredictionsResource(Resource):
     def get(self):
 
-        #data = trained_model.predict()
         subprocess.call(['python3','predictions.py'])
-        with open('/var/www/UFC_API/pred_fights.json') as jf:
+        with open('pred_fights.json') as jf:
             data = json.load(jf)
-        return jsonify({'predicted wins': data, 'Event':'UFC Fight Night: Overeem vs. Rozenstruik'})
+        return jsonify(data)
+
+
 
 api.add_resource(PredictionsResource,'/winners')
 

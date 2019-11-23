@@ -15,6 +15,20 @@ def update_events_table(event_list):
     db.session.add(e)
     db.session.commit()
 
+#Writes out the latest fighters to a text file
+#each fighter on their seperate line
+def get_latest_fighters(parser,event_list):
+    event = event_list[0]['event']
+    data_bytes = parser.getRawHTML(event_list[0]['link'])
+    result = parser.generate_event_bout_list(data_bytes)
+    print(result,flush=True)
+    fopn = open('bout_list.txt', 'w')
+    fopn.write(event+'\n')
+    for bout in result:
+        fopn.write(bout[0]+"\n")
+        fopn.write(bout[1]+"\n")
+    fopn.close()
+
 
 def populate_bouts_fighters_table(parser,event_data):
     #Only the first 10 bouts
@@ -58,6 +72,9 @@ def main():
     data_bytes = parser.getRawHTML(configobj.url)
     result = parser.generate_url_list(data_bytes) 
     print('populate bouts table',flush=True)
+    get_latest_fighters(parser,result)
+
+
     #update new events
     #update_events_table(result)
     #populate bouts for those events
