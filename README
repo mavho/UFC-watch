@@ -1,7 +1,15 @@
 
 What's finished:
-You can access this api at
-http://3.134.85.95/api/winners to receive a list of all predicted winners for the next fight.
+You can access this api, and currently it predicts upcoming UFC events using linear regression. I gather data through a webscrapper.
+To receive a list of all predicted winners for the next fight, you can access the endpoint at
+http://3.134.85.95/api/winners
+
+An example command could be:
+curl -i http://3.134.85.95:8008/api/winners
+You can access a front end of the api through
+http://3.134.85.95/web/front
+
+Or use the requests module in python to open a request.
 Currently there is only one endpoint.
 
 What I want completed:
