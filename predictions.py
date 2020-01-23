@@ -193,12 +193,13 @@ class Predictions():
         print("Recall:",metrics.recall_score(y_test, y_pred))
 
     def predict(self,event):
+        path = '/var/www/UFC_API/'
         filename = 'trained_Kev.sav'
-        loaded_module = pickle.load(open(filename,'rb'))
+        loaded_module = pickle.load(open(path + filename,'rb'))
         out_json = {}
 
         #(blue, red)
-        fobj = open("bout_list.txt", "r")
+        fobj = open(path + "bout_list.txt", "r")
         odd=False
         red_fighter=''
         blue_fighter=''
@@ -236,8 +237,8 @@ class Predictions():
                 fight['Winner'] = (fight_list[count][0])
                 fight['Loser'] = (fight_list[count][1])
             else:
-                fight['Winner'] = (fight_list[count][0])
-                fight['Loser'] = (fight_list[count][1])
+                fight['Winner'] = (fight_list[count][1])
+                fight['Loser'] = (fight_list[count][0])
             count+=1
             payload.append(fight)
 
@@ -248,8 +249,9 @@ def main():
     pm = Predictions()
     event=''
     data = pm.predict(event)
+    path = '/var/www/UFC_API/'
     
-    with(open('pred_fights.json','w')) as f:
+    with(open(path + 'pred_fights.json','w')) as f:
             json.dump(data,f)
 
 
