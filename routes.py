@@ -11,16 +11,15 @@ import subprocess
 ###
 ###Set up app, config url, parser, db, and migration
 ###
-cors = CORS(app, resources={r'/winners':{"origins":"*"}})
+cors = CORS(app)
 
 #configobj = ConfigURL()
 parser = UFCParser()
 
 class PredictionsResource(Resource):
     def get(self):
-
-        subprocess.call(['python3','predictions.py'])
-        with open('pred_fights.json') as jf:
+        #subprocess.call(['python3','predictions.py'])
+        with open('/var/www/UFC_API/pred_fights.json') as jf:
             data = json.load(jf)
         return jsonify(data)
 

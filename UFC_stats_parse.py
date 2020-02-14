@@ -13,7 +13,7 @@ class UFC_Stats_Parser():
         self.generateProxyList(self.proxy_list)
     
     def generateProxyList(self, proxy_list):
-        fobj = open("proxy_list.txt", "r")
+        fobj = open("/var/www/UFC_API/proxy_list.txt", "r")
         for line in fobj:
             self.proxy_list.append(Proxy(line))
 

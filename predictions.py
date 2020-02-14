@@ -215,7 +215,7 @@ class Predictions():
                 odd=True
 
         data = []
-        for(blue_fighter, red_fighter) in fight_list:
+        for(red_fighter,blue_fighter) in fight_list:
             blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + blue_fighter +"' or red_fighter='" + blue_fighter + "'"
             red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + red_fighter +"' or red_fighter='" + red_fighter + "'"
             union_query = blue_fighter_query + ' UNION ' + red_fighter_query
@@ -230,6 +230,8 @@ class Predictions():
         prediction = loaded_module.predict(out_fighters[self.feature_col])
         count = 0
         payload = [] 
+        print(prediction)
+        print(fight_list)
         
         for res in prediction:
             fight = {'Winner':'', 'Loser':''} 

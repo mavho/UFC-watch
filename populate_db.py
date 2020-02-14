@@ -22,7 +22,7 @@ def get_latest_fighters(parser,event_list):
     data_bytes = parser.getRawHTML(event_list[0]['link'])
     result = parser.generate_event_bout_list(data_bytes)
     print(result,flush=True)
-    fopn = open('bout_list.txt', 'w')
+    fopn = open('/var/www/UFC_API/bout_list.txt', 'w')
     fopn.write(event+'\n')
     for bout in result:
         fopn.write(bout[0]+"\n")
@@ -33,7 +33,7 @@ def get_latest_fighters(parser,event_list):
 def populate_bouts_fighters_table(parser,event_data):
     #Only the first 10 bouts
     #stopped at 140
-    for bout in event_data[1:3]:
+    for bout in event_data[1:2]:
         print(bout['event'], flush=True)
         event = Events.query.filter_by(event=bout['event']).first()
         if event is None:
@@ -67,14 +67,12 @@ def main():
     parser = UFC_Stats_Parser()
     configobj = ConfigURL()
 
-    print('populate event table',flush=True)
+    #print('populate event table',flush=True)
     #events list page
     data_bytes = parser.getRawHTML(configobj.url)
     result = parser.generate_url_list(data_bytes) 
-    print('populate bouts table',flush=True)
+    #print('populate bouts table',flush=True)
     get_latest_fighters(parser,result)
-
-
     #update new events
     #update_events_table(result)
     #populate bouts for those events
