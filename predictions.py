@@ -230,8 +230,6 @@ class Predictions():
         prediction = loaded_module.predict(out_fighters[self.feature_col])
         count = 0
         payload = [] 
-        print(prediction)
-        print(fight_list)
         
         for res in prediction:
             fight = {'Winner':'', 'Loser':''} 
