@@ -9,7 +9,10 @@ import sys, json
 #sklearn modules
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn import metrics
+from sklearn.linear_model import Perceptron
+from sklearn.linear_model import SGDClassifier 
+
+from sklearn import metrics, tree
 
 class Predictions():
     def __init__(self):
@@ -26,6 +29,11 @@ class Predictions():
     def weird_div(self,n,d):
         return n/d if d else 0
 
+    ### Populate the dataframe with the averages of fighters
+    ### selects winners, formats data 
+
+    ### if both of the fighter's names are filled, it computes the average and returns a playload 
+    ### if the both names are '' then it collects all of the fights
     def populate_dataframes(self,data_frame, red_fighter, blue_fighter,connection):
         #blue fighter, red fighter
         #vars to calculate avgs of respective fighters
@@ -149,7 +157,9 @@ class Predictions():
                 'r_TD':self.weird_div(avg_rTD,red_cnt), 'r_TD_PRCT':self.weird_div(avg_rTD_prct,red_cnt),
                 'r_TTLSTR':self.weird_div(avg_rttlstr,red_cnt),'r_TTLSTR_PRCT':self.weird_div(avg_rttlstr_prct,red_cnt)}
 
-    def train_predictionModel(self):
+    ### Grabs the data from the sql DB and performs preprocessing.
+    ### returns the training sets.
+    def generate_data(self):
         #weight class
         weight_class = 'Welterweight'
         blue_payload = 'blue_fighter,b_KD, b_PASS, b_SIGSTR, b_SIGSTR_PRCT, b_SUB, b_TD, b_TD_PRCT, b_TTLSTR'
@@ -159,6 +169,7 @@ class Predictions():
 
         #query for weight class
         weight_query = "SELECT * FROM bouts WHERE weight_class='Welterweight' or weight_class='Light Heavyweight' or weight_class='Bantamweight' or weight_class LIKE '%Strawweight'"
+        #weight_query = "SELECT * FROM bouts WHERE red_fighter='Macy Chiasson' or blue_fighter='Macy Chiasson'" 
         
         #queries for the fighters in some bout
         weight_frame = pd.read_sql(weight_query, self.connection)
@@ -167,39 +178,49 @@ class Predictions():
 
         self.populate_dataframes(weight_frame, '','', self.connection)
 
-
         X = weight_frame[self.feature_col]
         y = weight_frame.r_win
-
+        weight_frame.to_csv('test.csv')
+        #print(X,y)
         #split X and y into training and testing sets
-        #X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.25, random_state=0)
         X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.25, random_state=0)
+        return X_train, X_test, y_train, y_test
+
+    def train_predictionModel(self,model_type, X_train, X_test, y_train, y_test):
 
 
-        # instantiate the model (using the default parameters)
-        logreg = LogisticRegression()
         y_train = y_train.astype('int')
-        # fit the model with data
-        logreg.fit(X_train,y_train)
-        #
-        y_pred=logreg.predict(X_test)
+        if(model_type == 'LR'):
+            # instantiate the model (using the default parameters)
+            model = LogisticRegression()
+        elif(model_type =='clf'):
+            model = tree.DecisionTreeRegressor()
+        elif(model_type =='perp'):
+            model = Perceptron(penalty='l2') 
+        elif(model_type == 'SGD'):
+            model = SGDClassifier(warm_start=True)
 
+        # fit the model with data
+        model.fit(X_train,y_train)
+        #
+        y_pred = model.predict(X_test)
         filename = 'trained_Kev.sav'
-        pickle.dump(logreg, open(filename, 'wb'))
+        pickle.dump(model, open(filename, 'wb'))
+
         print('################################################################################')
-        count = 0
         print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
         print("Precision:",metrics.precision_score(y_test, y_pred))
         print("Recall:",metrics.recall_score(y_test, y_pred))
 
     def predict(self,event):
-        path = '/var/www/UFC_API/'
+        #path = '/var/www/UFC_API/'
+        path = 'C:/Users/maverick/Documents/VS_Workspace/UFC_API/'
         filename = 'trained_Kev.sav'
         loaded_module = pickle.load(open(path + filename,'rb'))
         out_json = {}
 
         #(blue, red)
-        fobj = open(path + "bout_list.txt", "r")
+        fobj = open(path + "bout_list3.txt", "r")
         odd=False
         red_fighter=''
         blue_fighter=''
@@ -207,32 +228,40 @@ class Predictions():
         out_json['event'] = fobj.readline().strip('\n')
         for line in fobj:
             if(odd):
-                blue_fighter = line
+                blue_fighter = line.replace("'","''")
                 fight_list.append((red_fighter.strip('\n'),blue_fighter.strip('\n')))
                 odd=False
             elif(not odd):
-                red_fighter = line
+                red_fighter = line.replace("'","''")
                 odd=True
 
         data = []
         for(red_fighter,blue_fighter) in fight_list:
             blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + blue_fighter +"' or red_fighter='" + blue_fighter + "'"
             red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + red_fighter +"' or red_fighter='" + red_fighter + "'"
+            #blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter=%(blue_fighter)s or red_fighter=%(blue_fighter)s"
+            #red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter=%(red_fighter)s or red_fighter=%(red_fighter)s"
             union_query = blue_fighter_query + ' UNION ' + red_fighter_query
-            fighter_frame = pd.read_sql(union_query, self.connection)
+            fighter_frame = pd.read_sql(union_query, self.connection, params={'blue_fighter':"'" + blue_fighter + "'",'red_fighter':"'"+ red_fighter+ "'"})
+            #print(fighter_frame)
             fighter_frame["b_win"] = 0
             fighter_frame["r_win"] = 0
             #out_fighters is a dataframe with all the averages of the to-be predicted fighters
 
             data.append(self.populate_dataframes(fighter_frame, blue_fighter,red_fighter, self.connection))
+        print(data)
         out_fighters = pd.DataFrame(data,columns=self.columns)
+        print(out_fighters)
 
         prediction = loaded_module.predict(out_fighters[self.feature_col])
         count = 0
         payload = [] 
         
+        print("###############################################################################################")
         for res in prediction:
             fight = {'Winner':'', 'Loser':''} 
+            print(res)
+            print(fight_list[count])
             if res == 1:
                 fight['Winner'] = (fight_list[count][0])
                 fight['Loser'] = (fight_list[count][1])
@@ -247,9 +276,10 @@ class Predictions():
 
 def main():
     pm = Predictions()
-    event=''
-    data = pm.predict(event)
+    X_train, X_test, y_train, y_test = pm.generate_data()
+    pm.train_predictionModel('LR', X_train, X_test, y_train, y_test)
     path = '/var/www/UFC_API/'
+    data = pm.predict('')
     
     with(open(path + 'pred_fights.json','w')) as f:
             json.dump(data,f)
