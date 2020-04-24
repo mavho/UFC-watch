@@ -169,6 +169,7 @@ class Predictions():
 
         #query for weight class
         weight_query = "SELECT * FROM bouts WHERE weight_class='Welterweight' or weight_class='Light Heavyweight' or weight_class='Bantamweight' or weight_class LIKE '%Strawweight'"
+        weight_query = "SELECT * FROM bouts"
         #weight_query = "SELECT * FROM bouts WHERE red_fighter='Macy Chiasson' or blue_fighter='Macy Chiasson'" 
         
         #queries for the fighters in some bout
@@ -180,15 +181,13 @@ class Predictions():
 
         X = weight_frame[self.feature_col]
         y = weight_frame.r_win
-        weight_frame.to_csv('test.csv')
+        #weight_frame.to_csv('test.csv')
         #print(X,y)
         #split X and y into training and testing sets
-        X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.25, random_state=0)
+        X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.32, random_state=0)
         return X_train, X_test, y_train, y_test
 
     def train_predictionModel(self,model_type, X_train, X_test, y_train, y_test):
-
-
         y_train = y_train.astype('int')
         if(model_type == 'LR'):
             # instantiate the model (using the default parameters)
@@ -212,7 +211,7 @@ class Predictions():
         print("Precision:",metrics.precision_score(y_test, y_pred))
         print("Recall:",metrics.recall_score(y_test, y_pred))
 
-    def predict(self,event):
+    def predict(self):
         #path = '/var/www/UFC_API/'
         path = 'C:/Users/maverick/Documents/VS_Workspace/UFC_API/'
         filename = 'trained_Kev.sav'
@@ -279,7 +278,7 @@ def main():
     X_train, X_test, y_train, y_test = pm.generate_data()
     pm.train_predictionModel('LR', X_train, X_test, y_train, y_test)
     path = '/var/www/UFC_API/'
-    data = pm.predict('')
+    data = pm.predict()
     
     with(open(path + 'pred_fights.json','w')) as f:
             json.dump(data,f)

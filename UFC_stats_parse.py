@@ -13,7 +13,8 @@ class UFC_Stats_Parser():
         self.generateProxyList(self.proxy_list)
     
     def generateProxyList(self, proxy_list):
-        fobj = open("/var/www/UFC_API/proxy_list.txt", "r")
+        #fobj = open("/var/www/UFC_API/proxy_list.txt", "r")
+        fobj = open("proxy_list.txt","r")
         for line in fobj:
             self.proxy_list.append(Proxy(line))
 
@@ -54,7 +55,7 @@ class UFC_Stats_Parser():
                 #proxy_list.remove(proxy)
                 time.sleep(random.randrange(20))
         #endpoint = request.get(url) #mybytes = endpoint.content
-        return mybytes
+        return mybytes 
     
     #returns a json from the events page of ufc_stats with query set to all.
     #json contains links and event names
@@ -177,8 +178,6 @@ class UFC_Stats_Parser():
 
         fight_stats['Red'] = fighter1_stats
         fight_stats['Blue'] = fighter2_stats
-
-
 
 def main():
     #url = 'http://www.ufcstats.com/statistics/events/completed?page=all'
