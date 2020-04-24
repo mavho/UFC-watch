@@ -2,26 +2,35 @@ from ufc_api import db, ConfigURL
 from UFC_stats_parse import UFC_Stats_Parser
 from models import Events, Bouts
 
-#should only be called with an empty events table
-def populate_events_table(event_list):
+def _populate_events_table(event_list):
+    """
+    Args: event_list
+    Addes every event in the event_list to the database
+    really a one time thing
+    """
     for event in event_list:
         db.session.add(Events(event=event['event']))
     
     db.session.commit()
 
-#gets new event and commits to db
 def update_events_table(event_list):
-    for i in range(5,6):
-        e = Events(event=event_list[i]['event'])
-        db.session.add(e)
+    """
+    Args: event_list
+    Grabs the first event in the event_list and commits it to the DB
+    """
+    e = Events(event=event_list[0]['event'])
+    db.session.add(e)
     db.session.commit()
 
-#Writes out the latest fighters to a text file
-#each fighter on their seperate line
-def get_latest_fighters(parser,event_list):
+def get_latest_fighters(UFC_parser,event_list):
+    """
+    Args: UFC_PARSER, event_list
+    Uses the UFC Parser to open up a link from the event list,
+    and write out the bouts from that event to bout_list.txt
+    """
     event = event_list[0]['event']
-    data_bytes = parser.getRawHTML(event_list[0]['link'])
-    result = parser.generate_event_bout_list(data_bytes)
+    data_bytes = UFC_parser.getRawHTML(event_list[0]['link'])
+    result = UFC_parser.generate_event_bout_list(data_bytes)
     print(result,flush=True)
     fopn = open('/var/www/UFC_API/bout_list.txt', 'w')
     fopn.write(event+'\n')
@@ -32,9 +41,15 @@ def get_latest_fighters(parser,event_list):
 
 
 def populate_bouts_fighters_table(parser,event_data):
+    """
+    Args: UFC_PARSER, event_list
+
+    Uses the UFC Parser to go through event page as event_data
+    Looks at all boutes in the data and commits the result to the DB
+    """
     #Only the first 10 bouts
     #stopped at 140
-    for bout in event_data[1:6]:
+    for bout in event_data[1:2]:
         print(bout['event'], flush=True)
         event = Events.query.filter_by(event=bout['event']).first()
         if event is None:
@@ -71,13 +86,13 @@ def main():
     #print('populate event table',flush=True)
     #events list page
     data_bytes = parser.getRawHTML(configobj.url)
-    result = parser.generate_url_list(data_bytes) 
+    url_list = parser.generate_url_list(data_bytes) 
     #print('populate bouts table',flush=True)
 
     #get_latest_fighters(parser,result)
     #update new events
-    update_events_table(result)
+    update_events_table(url_list)
     #populate bouts for those events
-    populate_bouts_fighters_table(parser,result)
+    populate_bouts_fighters_table(parser,url_list)
 if __name__ == '__main__':
     main()

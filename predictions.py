@@ -25,16 +25,23 @@ class Predictions():
                 'r_KD', 'r_PASS', 'r_SIGSTR', 'r_SIGSTR_PRCT', 'r_SUB', 'r_TD', 'r_TD_PRCT', 'r_TTLSTR', 'r_TTLSTR_PRCT']
 
     def p2f(self,str):
+        """
+        Given a string like 23%, return the float value of it
+        """
         return(float(str.strip('%'))/100)
     def weird_div(self,n,d):
+        """
+        Divide by 0
+        """
         return n/d if d else 0
 
-    ### Populate the dataframe with the averages of fighters
-    ### selects winners, formats data 
-
-    ### if both of the fighter's names are filled, it computes the average and returns a playload 
-    ### if the both names are '' then it collects all of the fights
     def populate_dataframes(self,data_frame, red_fighter, blue_fighter,connection):
+        """
+        Converts values from the data_frame into ints for numpy and sklearn to use it in predictions.
+
+        If both of the fighter's names are specified, it computes the average for those figthers and returns a playload. 
+        If the both names are '' then it won't return anything. 
+        """
         #blue fighter, red fighter
         #vars to calculate avgs of respective fighters
         avg_rsigstr = avg_rsigstr_prct = avg_rTD_prct = avg_rTD = avg_rKD = avg_rpass = avg_rsub = avg_rttlstr = avg_rttlstr_prct = 0 
@@ -157,9 +164,13 @@ class Predictions():
                 'r_TD':self.weird_div(avg_rTD,red_cnt), 'r_TD_PRCT':self.weird_div(avg_rTD_prct,red_cnt),
                 'r_TTLSTR':self.weird_div(avg_rttlstr,red_cnt),'r_TTLSTR_PRCT':self.weird_div(avg_rttlstr_prct,red_cnt)}
 
-    ### Grabs the data from the sql DB and performs preprocessing.
-    ### returns the training sets.
     def generate_data(self):
+        """
+        Processes the data from the SQL DB, and performs preprocessing
+        Performs a SQL query
+        
+        Returns X_train, X_test,Y_train,y_test
+        """
         #weight class
         weight_class = 'Welterweight'
         blue_payload = 'blue_fighter,b_KD, b_PASS, b_SIGSTR, b_SIGSTR_PRCT, b_SUB, b_TD, b_TD_PRCT, b_TTLSTR'
@@ -169,9 +180,8 @@ class Predictions():
 
         #query for weight class
         weight_query = "SELECT * FROM bouts WHERE weight_class='Welterweight' or weight_class='Light Heavyweight' or weight_class='Bantamweight' or weight_class LIKE '%Strawweight'"
-        weight_query = "SELECT * FROM bouts"
         #weight_query = "SELECT * FROM bouts WHERE red_fighter='Macy Chiasson' or blue_fighter='Macy Chiasson'" 
-        
+
         #queries for the fighters in some bout
         weight_frame = pd.read_sql(weight_query, self.connection)
         weight_frame["b_win"] = 0
@@ -188,6 +198,13 @@ class Predictions():
         return X_train, X_test, y_train, y_test
 
     def train_predictionModel(self,model_type, X_train, X_test, y_train, y_test):
+        """
+        Given the training sets, and model_type, trains a prediction model based on that model type.
+
+        ModelTypes: LR, clf, perp, SGD
+
+        Writes to a pickle obj called trained_Kev.sav
+        """
         y_train = y_train.astype('int')
         if(model_type == 'LR'):
             # instantiate the model (using the default parameters)
@@ -212,6 +229,13 @@ class Predictions():
         print("Recall:",metrics.recall_score(y_test, y_pred))
 
     def predict(self):
+        """
+        Reads in a bout_list generated from populate_db's function get_latest_fighters.
+        Performs a SQL query based on that list, and predicts each bout using the trained
+        prediction model.
+
+        Returns a json with the prediction results.
+        """
         #path = '/var/www/UFC_API/'
         path = 'C:/Users/maverick/Documents/VS_Workspace/UFC_API/'
         filename = 'trained_Kev.sav'

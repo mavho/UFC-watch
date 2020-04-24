@@ -13,14 +13,17 @@ class UFC_Stats_Parser():
         self.generateProxyList(self.proxy_list)
     
     def generateProxyList(self, proxy_list):
-        #fobj = open("/var/www/UFC_API/proxy_list.txt", "r")
-        fobj = open("proxy_list.txt","r")
+        fobj = open("/var/www/UFC_API/proxy_list.txt", "r")
+        #fobj = open("proxy_list.txt","r")
         for line in fobj:
             self.proxy_list.append(Proxy(line))
 
 
-    #used to get the raw bytes from a webpage
     def getRawHTML(self,url):
+        """
+        Takes a URL. Attempts to obtain html data from the webpage.
+        Users a rotating proxy. Returns data in bytes
+        """
         success=False
         for proxy in self.proxy_list[:]:
             proxy.generateHeader() 
@@ -60,6 +63,10 @@ class UFC_Stats_Parser():
     #returns a json from the events page of ufc_stats with query set to all.
     #json contains links and event names
     def generate_url_list(self, data):
+        """
+        Given html data of the event list on the UFC website,
+        generates a URL list of all the events and all their urls
+        """
         soup = BeautifulSoup(data,'lxml') 
         payload = soup.find('table', {'class', 'b-statistics__table-events'})
         payload = payload.find_all('a', href=True)
@@ -75,13 +82,17 @@ class UFC_Stats_Parser():
         return result
 
     def parse_event_list(self, data):
+        """
+        Not used 
+        """
         soup = BeautifulSoup(data, 'lxml')
         payload = soup.find('table', {'class', 'b-statistics__table-events'})
         return payload
 
-    #this is given an event page
-    #returns a json with the fight stats
     def parse_event_fights(self, data):
+        """
+        Returns a list with all of the fight stats of each bout
+        """
         soup = BeautifulSoup(data, 'lxml')
         payload = soup.find('tbody', {'class', 'b-fight-details__table-body'})
 
@@ -90,13 +101,16 @@ class UFC_Stats_Parser():
         fight_list = []
         for listing in payload:
             fight_stats = {}
-            self.parse_listing(listing, fight_stats)
+            self._parse_listing(listing, fight_stats)
             fight_list.append(fight_stats)
 
         return fight_list
     
-    #This returns a list of all the fighters
     def generate_event_bout_list(self,payload):
+        """
+        Returns a list with all of the fighter's names as a tuple
+        [(Mcgregor, Diaz)]
+        """
         soup = BeautifulSoup(payload, 'lxml')
         payload = soup.find('tbody', {'class', 'b-fight-details__table-body'})
 
@@ -112,9 +126,13 @@ class UFC_Stats_Parser():
 
         return fight_list
     
-    #parse the contents section of a td, populates fight_stats
-    #Do not call this!
-    def parse_listing(self, data, fight_stats):
+    def _parse_listing(self, data, fight_stats):
+        """
+        Parse the contents section of a td. Populates a json called fight_stats
+        This looks at main bout info: Time, Round, Method, WeightClass, winner,loser, res
+
+        Do not call this outside the file!
+        """
         #print(data['data-link'])
         payload = data.find_all('td')
         fight_stats['Time'] = payload[9].get_text(strip=True)
@@ -128,7 +146,7 @@ class UFC_Stats_Parser():
         #now we populate striking,td,sub statistics
         fight_details_url = data['data-link']
         data_bytes = self.getRawHTML(fight_details_url)
-        self.parse_striking_stats(data_bytes,fight_stats,striking_json,striking_json2) 
+        self._parse_striking_stats(data_bytes,fight_stats,striking_json,striking_json2) 
         result = payload[0].get_text(strip=True)
 
         if result == 'win':
@@ -142,7 +160,10 @@ class UFC_Stats_Parser():
 
     #given fight details, parse bout statistics    
     #New link so have to open another soup obj
-    def parse_striking_stats(self, data,fight_stats,fighter1_stats, fighter2_stats):
+    def _parse_striking_stats(self, data,fight_stats,fighter1_stats, fighter2_stats):
+        """
+        Parses striking statistics. Populates two json's
+        """
         soup = BeautifulSoup(data, 'lxml')
         table = soup.find('table')
         columns = table.find_all('td')
@@ -189,7 +210,7 @@ def main():
     #url = 'http://www.ufcstats.com/event-details/94a5aaf573f780ad'
     data_bytes = parser.getRawHTML(url)
     url_list = parser.generate_url_list(data_bytes)
-    fight_list=parser.generate_Event_Bout_list(url_list[0])
+    fight_list=parser.generate_event_bout_list(url_list[0])
     print(fight_list)
 
 
