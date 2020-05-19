@@ -179,7 +179,8 @@ class Predictions():
         ###dataframe for fighter averages in the predict list
 
         #query for weight class
-        weight_query = "SELECT * FROM bouts WHERE weight_class='Welterweight' or weight_class='Light Heavyweight' or weight_class='Bantamweight' or weight_class LIKE '%Strawweight'"
+        #weight_query = "SELECT * FROM bouts WHERE weight_class='Welterweight' or weight_class='Light Heavyweight' or weight_class='Bantamweight' or weight_class LIKE '%Strawweight'"
+        weight_query = "SELECT * FROM bouts"
         #weight_query = "SELECT * FROM bouts WHERE red_fighter='Macy Chiasson' or blue_fighter='Macy Chiasson'" 
 
         #queries for the fighters in some bout
@@ -228,7 +229,7 @@ class Predictions():
         print("Precision:",metrics.precision_score(y_test, y_pred))
         print("Recall:",metrics.recall_score(y_test, y_pred))
 
-    def predict(self):
+    def predict(self, filename = None, red_fighter=None,blue_fighter=None):
         """
         Reads in a bout_list generated from populate_db's function get_latest_fighters.
         Performs a SQL query based on that list, and predicts each bout using the trained
@@ -242,49 +243,78 @@ class Predictions():
         loaded_module = pickle.load(open(path + filename,'rb'))
         out_json = {}
 
-        #(blue, red)
-        fobj = open(path + "bout_list3.txt", "r")
-        odd=False
-        red_fighter=''
-        blue_fighter=''
         fight_list = []
-        out_json['event'] = fobj.readline().strip('\n')
-        for line in fobj:
-            if(odd):
-                blue_fighter = line.replace("'","''")
-                fight_list.append((red_fighter.strip('\n'),blue_fighter.strip('\n')))
-                odd=False
-            elif(not odd):
-                red_fighter = line.replace("'","''")
-                odd=True
 
-        data = []
-        for(red_fighter,blue_fighter) in fight_list:
+        def predict_from_boutListing(filename,fight_list):
+            #(blue, red)
+            fobj = open(path + filename, "r")
+            odd=False
+            red_fighter=''
+            blue_fighter=''
+            out_json['event'] = fobj.readline().strip('\n')
+            for line in fobj:
+                if(odd):
+                    blue_fighter = line.replace("'","''")
+                    fight_list.append((red_fighter.strip('\n'),blue_fighter.strip('\n')))
+                    odd=False
+                elif(not odd):
+                    red_fighter = line.replace("'","''")
+                    odd=True
+
+            data = []
+            for(red_fighter,blue_fighter) in fight_list:
+                blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + blue_fighter +"' or red_fighter='" + blue_fighter + "'"
+                red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + red_fighter +"' or red_fighter='" + red_fighter + "'"
+                #blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter=%(blue_fighter)s or red_fighter=%(blue_fighter)s"
+                #red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter=%(red_fighter)s or red_fighter=%(red_fighter)s"
+                union_query = blue_fighter_query + ' UNION ' + red_fighter_query
+                fighter_frame = pd.read_sql(union_query, self.connection, params={'blue_fighter':"'" + blue_fighter + "'",'red_fighter':"'"+ red_fighter+ "'"})
+                #print(fighter_frame)
+                fighter_frame["b_win"] = 0
+                fighter_frame["r_win"] = 0
+                #out_fighters is a dataframe with all the averages of the to-be predicted fighters
+
+                data.append(self.populate_dataframes(fighter_frame, blue_fighter,red_fighter, self.connection))
+            #print(data)
+            out_fighters = pd.DataFrame(data,columns=self.columns)
+            return out_fighters
+        def predict_two_fighters(red_fighter,blue_fighter,fight_list):
+            fight_list.append((red_fighter.strip('\n'), blue_fighter.strip('\n')))
+            data = []
             blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + blue_fighter +"' or red_fighter='" + blue_fighter + "'"
             red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + red_fighter +"' or red_fighter='" + red_fighter + "'"
             #blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter=%(blue_fighter)s or red_fighter=%(blue_fighter)s"
             #red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter=%(red_fighter)s or red_fighter=%(red_fighter)s"
             union_query = blue_fighter_query + ' UNION ' + red_fighter_query
             fighter_frame = pd.read_sql(union_query, self.connection, params={'blue_fighter':"'" + blue_fighter + "'",'red_fighter':"'"+ red_fighter+ "'"})
-            #print(fighter_frame)
+            print(fighter_frame)
             fighter_frame["b_win"] = 0
             fighter_frame["r_win"] = 0
             #out_fighters is a dataframe with all the averages of the to-be predicted fighters
 
             data.append(self.populate_dataframes(fighter_frame, blue_fighter,red_fighter, self.connection))
-        print(data)
-        out_fighters = pd.DataFrame(data,columns=self.columns)
-        print(out_fighters)
+            print(data)
+            out_fighters = pd.DataFrame(data,columns=self.columns)
+            return out_fighters
 
-        prediction = loaded_module.predict(out_fighters[self.feature_col])
+
+        if filename == None:
+            out_fighters = predict_from_boutListing(filename,fight_list)
+            prediction = loaded_module.predict(out_fighters[self.feature_col])
+        elif red_fighter and blue_fighter:
+            out_fighters = predict_two_fighters(red_fighter,blue_fighter,fight_list)
+            prediction = loaded_module.predict(out_fighters[self.feature_col])
+
+        print(out_fighters)
+        print(fight_list)
+        print(prediction)
+
         count = 0
         payload = [] 
         
         print("###############################################################################################")
         for res in prediction:
             fight = {'Winner':'', 'Loser':''} 
-            print(res)
-            print(fight_list[count])
             if res == 1:
                 fight['Winner'] = (fight_list[count][0])
                 fight['Loser'] = (fight_list[count][1])
@@ -302,7 +332,7 @@ def main():
     X_train, X_test, y_train, y_test = pm.generate_data()
     pm.train_predictionModel('LR', X_train, X_test, y_train, y_test)
     path = '/var/www/UFC_API/'
-    data = pm.predict()
+    data = pm.predict('bout_list.txt')
     
     with(open(path + 'pred_fights.json','w')) as f:
             json.dump(data,f)

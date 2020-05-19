@@ -1,4 +1,5 @@
-from ufc_api import db, ConfigURL 
+from ufc_api import db, ConfigURL
+import os
 from UFC_stats_parse import UFC_Stats_Parser
 from models import Events, Bouts
 
@@ -40,7 +41,7 @@ def get_latest_fighters(UFC_parser,event_list):
     fopn.close()
 
 
-def populate_bouts_fighters_table(parser,event_data):
+def populate_bouts_fighters_table(parser,event_data,end=2):
     """
     Args: UFC_PARSER, event_list
 
@@ -49,11 +50,13 @@ def populate_bouts_fighters_table(parser,event_data):
     """
     #Only the first 10 bouts
     #stopped at 140
-    for bout in event_data[1:2]:
+    for bout in event_data[1:end]:
         print(bout['event'], flush=True)
         event = Events.query.filter_by(event=bout['event']).first()
         if event is None:
-            event = 0
+            db.session.add(Events(event=bout['event']))
+            db.session.commit()
+            event = Events.query.filter_by(event=bout['event']).first()
         try:
             data_bytes = parser.getRawHTML(bout['link'])
             result = parser.parse_event_fights(data_bytes)
@@ -80,19 +83,22 @@ def populate_bouts_fighters_table(parser,event_data):
 
 
 def main():
-    parser = UFC_Stats_Parser()
-    configobj = ConfigURL()
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    parser = UFC_Stats_Parser(basedir + '/proxy_list.txt')
 
+    CU = ConfigURL()
     #print('populate event table',flush=True)
     #events list page
-    data_bytes = parser.getRawHTML(configobj.url)
+    data_bytes = parser.getRawHTML( CU.completed_page_url)
     url_list = parser.generate_url_list(data_bytes) 
     #print('populate bouts table',flush=True)
 
     #get_latest_fighters(parser,result)
+
     #update new events
-    update_events_table(url_list)
+    #update_events_table(url_list)
+
     #populate bouts for those events
-    populate_bouts_fighters_table(parser,url_list)
+    populate_bouts_fighters_table(parser,url_list,end=5)
 if __name__ == '__main__':
     main()

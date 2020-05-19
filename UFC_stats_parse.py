@@ -6,14 +6,21 @@ from flask import jsonify
 
 
 class UFC_Stats_Parser():
+    """
+    Web crawler dedicated to the ufc stats events page ;)
+    """
 
-    def __init__(self):
+    def __init__(self,plistfile):
+        """
+        Takes in plistfile, which is the location of the proxy_list.txt
+        """
         self.working_proxy = ''
         self.proxy_list = []
-        self.generateProxyList(self.proxy_list)
+        self.plistfile = plistfile
+        self._generateProxyList(self.proxy_list,self.plistfile)
     
-    def generateProxyList(self, proxy_list):
-        fobj = open("/var/www/UFC_API/proxy_list.txt", "r")
+    def _generateProxyList(self, proxy_list, plist):
+        fobj = open(plist, "r")
         #fobj = open("proxy_list.txt","r")
         for line in fobj:
             self.proxy_list.append(Proxy(line))
