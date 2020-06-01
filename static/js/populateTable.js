@@ -31,7 +31,7 @@ function tabulate(data){
     var fight_table = document.getElementById('fight_table')
 
     var event_header = document.getElementById('header')
-        event_header.className="title has-text-weight-bold has-text-grey"
+        event_header.className="title has-text-weight-bold header-gradient"
         event_header.innerHTML = data['event'] + " Predictions"
 
 
@@ -44,26 +44,26 @@ function tabulate(data){
             wrapper1.className="tile is-parent"
         
         var fighter1 = document.createElement("div")
-            fighter1.className="tile box is-child has-text-weight-bold has-background-success has-text-black"
+            fighter1.className="tile  box is-child has-text-weight-bold has-text-black gold-background"
             fighter1.id="fighter1"
             fighter1.innerHTML=data['bouts'][i]['Winner']
 
         wrapper1.appendChild(fighter1)
         var wrapper2= document.createElement("div")
-            wrapper2.className="tile is-parent"
+            wrapper2.className="tile is-parent "
         var fighter2 = document.createElement("div")
-            fighter2.className="tile box is-child has-text-weight-bold has-background-danger has-text-black"
+            fighter2.className="tile box red-background is-child has-text-weight-bold  has-text-black"
             fighter2.id="fighter2"
             fighter2.innerHTML=data['bouts'][i]['Loser']
         wrapper2.appendChild(fighter2)
 
         var wrapper3 = document.createElement("div")
-            wrapper3.className="tile is-parent is-1"
+            wrapper3.className="tile is-parent is-1 has-text-centered"
 
         var icon_container = document.createElement("span")
-            icon_container.className = "icon tile is-child has-text-white has-text-centered"
+            icon_container.className = "icon tile has-text-white is-child has-text-centered "
         var icon = document.createElement("i")
-            icon.className="fas fa-3x fa-fist-raised"
+            icon.className="fas fa-3x fa-fist-raised gradient-background"
 
         icon_container.appendChild(icon)
         wrapper3.appendChild(icon_container)

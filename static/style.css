@@ -1,6 +1,24 @@
+html *{
+    font-family: 'Fjalla One';
+}
 body{
     background-color: black;
 }
+
+/* fjalla-one-regular - latin */
+@font-face {
+  font-family: 'Fjalla One';
+  font-style: normal;
+  font-weight: 400;
+  src: url('fonts/fjalla-one-v7-latin-regular.eot'); /* IE9 Compat Modes */
+  src: local('Fjalla One'), local('FjallaOne-Regular'),
+       url('fonts/fjalla-one-v7-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('fonts/fjalla-one-v7-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+       url('fonts/fjalla-one-v7-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('fonts/fjalla-one-v7-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('fonts/fjalla-one-v7-latin-regular.svg#FjallaOne') format('svg'); /* Legacy iOS */
+}
+
 #banner{
     background-image: url("img_3137.jpg");
     background-position: 90%, 30%;
@@ -13,30 +31,24 @@ body{
 .h1{
     mix-blend-mode: screen;
 }
-/*
-table {
-    background-color: crimson;
-    border:2px solid black;
-    border-radius: 20px;
-    outline: 5px;
-    font-size: 24px;
-    border-spacing: 2mm;
-    margin: 0 auto;
+
+.gold-text{
+    color: #cab228ea;
 }
-caption{
-    font-size: 3ch;
-    color: crimson;
-    text-emphasis: bold;
-    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+.red-text{
+    color: #cc1c1cea;
 }
-tr, td{
-    text-shadow: 2px 2px 5px white;
-    border:1px solid black;
-    padding: 5px;
+.gold-background{
+    background-color: #cab228ea !important;
 }
-tr:hover{
-    background-color: whitesmoke;
-    text-emphasis-color: inherit;
-    opacity: 0.4;
+
+.red-background{
+    background-color:#cc1c1cea !important;
 }
-*/
+
+.header-gradient{
+    font-size: 72px;
+    background: -webkit-linear-gradient(rgb(240, 0, 0), rgb(165, 147, 45));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}

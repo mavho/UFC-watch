@@ -81,7 +81,7 @@ class FrontEndResource(Resource):
 api.add_resource(PredictionsResource,'/api/predictions')
 api.add_resource(EventResouce,'/api/event/<int:event_id>')
 api.add_resource(EventsResource,'/api/events/<string:param>')
-api.add_resource(FrontEndResource,'/web/index')
+api.add_resource(FrontEndResource,'/web')
 
 class ConfigURL():
     """
