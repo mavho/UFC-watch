@@ -72,13 +72,16 @@ class EventsResource(Resource):
                     msg['events'].append(event_schema.dump(event))
         return msg,200
 
+
+class FrontEndResource(Resource):
+    def get(self):
+        headers = {'Content-Type':'text/html'}
+        return make_response(render_template('_layouts/front_layout.html'),200,headers)
+
 api.add_resource(PredictionsResource,'/api/predictions')
 api.add_resource(EventResouce,'/api/event/<int:event_id>')
 api.add_resource(EventsResource,'/api/events/<string:param>')
-
-@app.route('/web/index')
-def index():
-    return render_template('_layouts/front_layout.html'), 200
+api.add_resource(FrontEndResource,'/web/index')
 
 class ConfigURL():
     """
