@@ -1,0 +1,42 @@
+body{
+    background-color: black;
+}
+#banner{
+    background-image: url("img_3137.jpg");
+    background-position: 90%, 30%;
+    background-size: 100%;
+    background-attachment: scroll;
+    fill-opacity:0.3;
+    -webkit-mask-image:-webkit-gradient(linear, left top, left bottom, from(rgba(0,0,0,1)), to(rgba(0,0,0,0)));
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
+}
+.h1{
+    mix-blend-mode: screen;
+}
+/*
+table {
+    background-color: crimson;
+    border:2px solid black;
+    border-radius: 20px;
+    outline: 5px;
+    font-size: 24px;
+    border-spacing: 2mm;
+    margin: 0 auto;
+}
+caption{
+    font-size: 3ch;
+    color: crimson;
+    text-emphasis: bold;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+}
+tr, td{
+    text-shadow: 2px 2px 5px white;
+    border:1px solid black;
+    padding: 5px;
+}
+tr:hover{
+    background-color: whitesmoke;
+    text-emphasis-color: inherit;
+    opacity: 0.4;
+}
+*/

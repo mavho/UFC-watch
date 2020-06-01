@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, abort, make_response, request, url_for
+from flask import Flask, jsonify, abort, make_response, request, url_for,render_template
 from flask_restful import Resource, Api 
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -75,6 +75,10 @@ class EventsResource(Resource):
 api.add_resource(PredictionsResource,'/api/predictions')
 api.add_resource(EventResouce,'/api/event/<int:event_id>')
 api.add_resource(EventsResource,'/api/events/<string:param>')
+
+@app.route('/web/index')
+def index():
+    return render_template('_layouts/front_layout.html'), 200
 
 class ConfigURL():
     """
