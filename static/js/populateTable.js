@@ -9,7 +9,6 @@ function get_payload(){
     data_req.onreadystatechange = function(){
         if(data_req.readyState == 4 && data_req.status == 200){
             text_req = data_req.responseText;
-            text_req = 'test.json';
             var actual_JSON = JSON.parse(text_req);
             console.log(actual_JSON)
 
