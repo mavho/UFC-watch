@@ -237,10 +237,10 @@ class Predictions():
 
         Returns a json with the prediction results.
         """
-        #path = '/home/homaverick/UFC_API/'
-        path = 'C:/Users/maverick/Documents/VS_Workspace/UFC_API/'
-        filename = 'trained_Kev.sav'
-        loaded_module = pickle.load(open(path + filename,'rb'))
+        path = '/home/homaverick/UFC_API/'
+        #path = 'C:/Users/maverick/Documents/VS_Workspace/UFC_API/'
+        trained_model = 'trained_Kev.sav'
+        loaded_module = pickle.load(open(path + trained_model,'rb'))
         out_json = {}
 
         fight_list = []
@@ -298,14 +298,13 @@ class Predictions():
             return out_fighters
 
 
-        if filename == None:
+        if filename != None:
             out_fighters = predict_from_boutListing(filename,fight_list)
             prediction = loaded_module.predict(out_fighters[self.feature_col])
         elif red_fighter and blue_fighter:
             out_fighters = predict_two_fighters(red_fighter,blue_fighter,fight_list)
             prediction = loaded_module.predict(out_fighters[self.feature_col])
 
-        print(out_fighters)
         print(fight_list)
         print(prediction)
 
@@ -332,7 +331,7 @@ def main():
     X_train, X_test, y_train, y_test = pm.generate_data()
     pm.train_predictionModel('LR', X_train, X_test, y_train, y_test)
     basedir = os.path.abspath(os.path.dirname(__file__))
-    data = pm.predict('bout_list.txt')
+    data = pm.predict(filename='bout_list.txt')
     
     with(open(basedir + 'pred_fights.json','w')) as f:
         json.dump(data,f)
