@@ -4,7 +4,7 @@ function get_payload(){
     var text_req;
     //data_req.overrideMimeType("application/json");
     //api call
-    data_req.open("GET", "http://homaverick.pythonanywhere.com/api/predictions", true);
+    data_req.open("GET", "http://ufcwatch.pythonanywhere.com/api/predictions", true);
 
     data_req.onreadystatechange = function(){
         if(data_req.readyState == 4 && data_req.status == 200){
