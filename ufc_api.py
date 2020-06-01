@@ -10,10 +10,10 @@ import os,sys, json
 app = Flask(__name__)
 app.config.from_object(Config)
 
-if os.environ.get('FP_CONFIG',"DEV") == 'PROD':
-    app.config.from_object(ProdConfig)
-else:
+if os.environ.get('FP_CONFIG',"PROD") == 'DEV':
     app.config.from_object(DevConfig)
+else:
+    app.config.from_object(ProdConfig)
 
 app.debug = app.config['DEBUG']
 api=Api(app)
@@ -29,8 +29,6 @@ class PredictionsResource(Resource):
     for the predictions module
     """
     def get(self):
-        print(app.config['ROUTES']['basedir'],file=sys.stderr)
-        print(app.config['HOST'],file=sys.stderr)
         #subprocess.call(['python3','predictions.py'])
         with open(app.config['ROUTES']['basedir'] + '/pred_fights.json') as jf:
             data = json.load(jf)
