@@ -239,7 +239,7 @@ class Predictions():
         """
         basedir = os.path.abspath(os.path.dirname(__file__))
         #path = 'C:/Users/maverick/Documents/VS_Workspace/UFC_API/'
-        trained_model = 'trained_Kev.sav'
+        trained_model = '/trained_Kev.sav'
         loaded_module = pickle.load(open(basedir + trained_model,'rb'))
         out_json = {}
 
@@ -333,7 +333,7 @@ def main():
     basedir = os.path.abspath(os.path.dirname(__file__))
     data = pm.predict(filename=basedir+'/bout_list.txt')
     
-    with(open(basedir + 'pred_fights.json','w')) as f:
+    with(open(basedir + '/pred_fights.json','w')) as f:
         json.dump(data,f)
 
 
