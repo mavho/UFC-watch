@@ -237,7 +237,7 @@ class Predictions():
 
         Returns a json with the prediction results.
         """
-        #path = '/var/www/UFC_API/'
+        #path = '/home/homaverick/UFC_API/'
         path = 'C:/Users/maverick/Documents/VS_Workspace/UFC_API/'
         filename = 'trained_Kev.sav'
         loaded_module = pickle.load(open(path + filename,'rb'))
@@ -331,7 +331,7 @@ def main():
     pm = Predictions()
     X_train, X_test, y_train, y_test = pm.generate_data()
     pm.train_predictionModel('LR', X_train, X_test, y_train, y_test)
-    path = '/var/www/UFC_API/'
+    path = '/home/homaverick/UFC_API/'
     data = pm.predict('bout_list.txt')
     
     with(open(path + 'pred_fights.json','w')) as f:

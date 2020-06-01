@@ -33,7 +33,7 @@ def get_latest_fighters(UFC_parser,event_list):
     data_bytes = UFC_parser.getRawHTML(event_list[0]['link'])
     result = UFC_parser.generate_event_bout_list(data_bytes)
     print(result,flush=True)
-    fopn = open('/var/www/UFC_API/bout_list.txt', 'w')
+    fopn = open('/home/homaverick/UFC_API/bout_list.txt', 'w')
     fopn.write(event+'\n')
     for bout in result:
         fopn.write(bout[0]+"\n")

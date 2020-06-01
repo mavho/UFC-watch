@@ -20,5 +20,6 @@ class DevConfig(Config):
 class ProdConfig(Config):
     HOST="0.0.0.0"
     DEBUG=False
-    ROUTES={'basedir':'/var/www/UFC_API/'}
+    ROUTES={'basedir':'/home/homaverick/UFC_API/'}
+
     
