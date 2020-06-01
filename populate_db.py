@@ -32,8 +32,8 @@ def get_latest_fighters(UFC_parser,event_list):
     event = event_list[0]['event']
     data_bytes = UFC_parser.getRawHTML(event_list[0]['link'])
     result = UFC_parser.generate_event_bout_list(data_bytes)
-    print(result,flush=True)
-    fopn = open('/home/homaverick/UFC_API/bout_list.txt', 'w')
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    fopn = open(basedir + '/bout_list.txt', 'w')
     fopn.write(event+'\n')
     for bout in result:
         fopn.write(bout[0]+"\n")
@@ -93,12 +93,12 @@ def main():
     url_list = parser.generate_url_list(data_bytes) 
     #print('populate bouts table',flush=True)
 
-    #get_latest_fighters(parser,result)
+    get_latest_fighters(parser,url_list)
 
     #update new events
     #update_events_table(url_list)
 
     #populate bouts for those events
-    populate_bouts_fighters_table(parser,url_list,end=5)
+    #populate_bouts_fighters_table(parser,url_list,end=5)
 if __name__ == '__main__':
     main()

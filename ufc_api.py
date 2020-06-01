@@ -29,8 +29,7 @@ class PredictionsResource(Resource):
     for the predictions module
     """
     def get(self):
-        #subprocess.call(['python3','predictions.py'])
-        with open(app.config['ROUTES']['basedir'] + '/pred_fights.json') as jf:
+        with open(app.config['ROUTES']['basedir'] + 'pred_fights.json') as jf:
             data = json.load(jf)
         return make_response(jsonify(data), 200)
 
@@ -43,7 +42,7 @@ class EventResouce(Resource):
         msg = {}
         bout_schema = BoutSchema()
         event_schema = EventSchema()
-        print("Recieved " + str(event_id), file=sys.stderr)
+        #print("Recieved " + str(event_id), file=sys.stderr)
         rows = Bouts.query.filter_by(event_id=str(event_id)).all()
         event = Events.query.filter_by(id=event_id).first()
         msg['event'] = event_schema.dump(event)
@@ -63,20 +62,19 @@ class EventsResource(Resource):
         msg = {}
         event_schema = EventSchema()
         msg['events'] = []
-        #event_rows = Events.query.filter_by().all()
-        db.session.add(Events())
-        #if param == "all":
-        #    for event in event_rows:
-        #        msg['events'].append(event_schema.dump(event))
-        #elif param == "existing":
-        #    for event in event_rows:
-        #        if Bouts.query.filter_by(event_id=event.id).first() != None:
-        #            msg['events'].append(event_schema.dump(event))
+        event_rows = Events.query.filter_by().all()
+        if param == "all":
+            for event in event_rows:
+                msg['events'].append(event_schema.dump(event))
+        elif param == "existing":
+            for event in event_rows:
+                if Bouts.query.filter_by(event_id=event.id).first() != None:
+                    msg['events'].append(event_schema.dump(event))
         return msg,200
 
-api.add_resource(PredictionsResource,'/predictions')
-api.add_resource(EventResouce,'/event/<int:event_id>')
-api.add_resource(EventsResource,'/events/<string:param>')
+api.add_resource(PredictionsResource,'/api/predictions')
+api.add_resource(EventResouce,'/api/event/<int:event_id>')
+api.add_resource(EventsResource,'/api/events/<string:param>')
 
 class ConfigURL():
     """

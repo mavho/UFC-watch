@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from models import Events, Bouts
 import pandas as pd
 import pickle
-import sys, json
+import sys, json,os
 
 #sklearn modules
 from sklearn.model_selection import train_test_split
@@ -331,11 +331,11 @@ def main():
     pm = Predictions()
     X_train, X_test, y_train, y_test = pm.generate_data()
     pm.train_predictionModel('LR', X_train, X_test, y_train, y_test)
-    path = '/home/homaverick/UFC_API/'
+    basedir = os.path.abspath(os.path.dirname(__file__))
     data = pm.predict('bout_list.txt')
     
-    with(open(path + 'pred_fights.json','w')) as f:
-            json.dump(data,f)
+    with(open(basedir + 'pred_fights.json','w')) as f:
+        json.dump(data,f)
 
 
 if __name__ == '__main__':
