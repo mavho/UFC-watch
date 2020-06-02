@@ -20,7 +20,7 @@ var json_obj = JSON.parse(payload);
 ### Events
 You can issue a GET request to the events endpoint:
 ```
-curl -s --request GET --header Content-Type: application/json --write-out \n%{http_code}\n http://ufcwatch/events.pythonanywhere/all
+curl -s --request GET --header Content-Type: application/json --write-out \n%{http_code}\n http://ufcwatch.pythonanywhere/events/all
 ```
 Specifying all will grab all the events with their corresponding id. If you specify existing
 ```
