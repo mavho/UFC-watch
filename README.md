@@ -1,37 +1,45 @@
+# UFC API and Fight Predictor
+This is an easily accessible RESTFUl api written with Flask. The main goals was to provide a service where users can get bout information and stricking statistics on UFC events. Coupled with the API is a fight prediction module written with Scikit Learn. It's a fairly straight foward model, it uses linear regression to calculate whether or not a fighter would win.
 
-What's finished:
-You can access this api, and currently it predicts upcoming UFC events using linear regression. I gather data through a webscrapper.
-To receive a list of all predicted winners for the next fight, you can access the endpoint at
-http://3.134.85.95/api/winners
+### This API is still under active development. See bottom
 
-An example command could be:
-curl -i http://3.134.85.95:8008/api/winners
-You can access a front end of the api through
-http://3.134.85.95/web/front
+#### Is the information accurate?
+I used a webscrapper to scrape information of the ufcstats page. I only grabbed around half of the most recent events, so there are going to be some events that are missing. This info is as accurate as that page. Aside from that it is accurate.
 
-Or use the requests module in python to open a request.
-Currently there is only one endpoint.
-
-What I want completed:
-A site where users can see the upcoming UFC fight, and the site - server, whatever, will
-give the users a fight prediction for that fight. 
-TODO:
-More routes for the api.
-	-More routes include
-		1. Search 2 fighters and predict who would win between  difficulty 6
-		2. Return a JSON of bouts based on a query 		difficulty 4
-	-Essentially, this is an API for an SQL, however instead of letting users to directly interact with my DB, they can only pull data.
-	-The only thing that will interact with my DB are the autonomous scripts located on the server.
-
-make the rotating proxy better... probably make another webscraper for that hahahah
-
-Make it multithreaded.
-Make it distributed (for fun).
-
-Do front end.
+## Technologies
+I used a multitude of libraries and frameworks to complete this. The most noteable are [Flask](https://flask-restful.readthedocs.io/en/latest/) for the webservice framework, [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) for the creating the webscrapper, and [scikit-learn](https://scikit-learn.org/stable/). The front end uses the [Bulma](https://bulma.io/documentation/) CSS framework.
 
 
-Currently:
-I'm still in school, and this is a busy quarter. However this is a project I want to complete by,
-this quarter so I'll try to give weekly updates. Working on a distributed systems project as well as
-an android video game.
+## API routes
+These endpoints will return a JSON encoded string.
+If you're using Javascript, you can issue an XMLHttpRequest, then
+```
+var json_obj = JSON.parse(payload);
+```
+
+### Events
+You can issue a GET request to the events endpoint:
+```
+curl -s --request GET --header Content-Type: application/json --write-out \n%{http_code}\n http://ufcwatch/events/all
+```
+Specifying all will grab all the events with their corresponding id. If you specify existing
+```
+curl -s --request GET --header Content-Type: application/json --write-out \n%{http_code}\n http://127.0.0.1:5000/events/existing
+```
+you'll get only the events that have bouts.
+
+### Event
+The event endpoint has the form
+```
+/event/id
+```
+### Predictions
+You can get the latest event predictions from the predictions endpoint
+```
+/predictions
+```
+
+##### TODO's
+- prediction route with 2 fighters (started)
+- fighters endpoint
+- better model
