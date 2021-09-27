@@ -1,6 +1,0 @@
-{
-    "python.linting.pylintEnabled": true,
-    "python.pythonPath": "C:\\Users\\maverick\\anaconda3\\envs\\KUFC\\python.exe",
-    "python.formatting.provider": "yapf",
-    "git.ignoreLimitWarning": true
-}
