@@ -98,7 +98,7 @@ class UFCWebScraper():
                 elif task.depth == 1:
                     self.results[task.url]['bouts'] = data
                 elif task.depth == 2:
-                    self.results[task.parent_url]['bouts'] = data
+                    self.results[task.parent_url]['bouts'][task.url].update(data)
                         
 
                 ### insert new links into the queue.
@@ -132,7 +132,8 @@ class UFCWebScraper():
             links, data = self.parse_event_page(html)
         elif depth == 2:
             html = await self.r_proxy._make_request(url)
-            links, data = self.parse_event_page(html)
+            data = self._parse_striking_stats(html)
+            links = set()
             
         else:
             html = ''
@@ -173,7 +174,7 @@ class UFCWebScraper():
 
         return links,event_data
 
-    def parse_event_page(self, data:str) -> Tuple[List[str],List[dict]]:
+    def parse_event_page(self, data:str) -> Tuple[Set[str],List[dict]]:
         """
         Given html data of an event page.
         
@@ -184,20 +185,20 @@ class UFCWebScraper():
 
         payload = payload.find_all('tr', {'class', 'b-fight-details__table-row'})
         
-        fight_list = []
-        bout_links = []
-        for it,listing in enumerate(payload):
-            bout_stats,url = self._parse_listing(listing)
+        fight_dict = {} 
+        bout_links = set() 
+        for listing in payload:
+            url,bout_stats = self._parse_listing(listing)
             ### this is the bout number
-            #bout_stats['num'] = it
-            fight_list.append(bout_stats)
+            #bout_stats['link'] = url 
+            fight_dict[url] = bout_stats
         
-            bout_links.append(url)
+            bout_links.add(url)
            
 
-        return bout_links,fight_list
+        return bout_links,fight_dict
     
-    def _parse_listing(self, data:str) -> Tuple[dict,str]:
+    def _parse_listing(self, data:str) -> Tuple[str,dict]:
         """
         Parse the contents section of a td. Populates a json called fight_stats
         This looks at main bout info: Time, Round, Method, WeightClass, winner,loser, res
@@ -233,15 +234,13 @@ class UFCWebScraper():
         #data_bytes = self.r_proxy.getRawHTML(fight_details_url)
         #self._parse_striking_stats(data_bytes,fight_stats) 
 
-        print(fight_stats)
-        return fight_stats,fight_details_url
+        return fight_details_url,fight_stats
 
-    #given fight details, parse bout statistics    
-    #New link so have to open another soup obj
-    def _parse_striking_stats(self, data,fight_stats):
+    def _parse_striking_stats(self, data:str) -> Dict:
         """
         Parses striking statistics. Populates two json's
         """
+        fight_stats = {}
         red_stats = {}
         blue_stats = {}
 
@@ -281,6 +280,9 @@ class UFCWebScraper():
 
         fight_stats['Red'] = red_stats
         fight_stats['Blue'] = blue_stats
+
+        return fight_stats
+
 
     def generate_event_bout_list(self,payload):
         """
