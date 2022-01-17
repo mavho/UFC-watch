@@ -1,17 +1,17 @@
-import json, sys, re, time, random
-import urllib.request
 from bs4 import BeautifulSoup
-from flask import jsonify
 
 from dataclasses import dataclass 
 from typing import Set, Iterable, List, Tuple, Dict, Optional
 
-import asyncio
+import asyncio, re
 
 from rotatingProxy.rotatingProxy import RotatingProxy
 
 @dataclass
 class TaskQueueMessage:
+    """
+    Represents a Task for the async Queue.
+    """
     url: str
     parent_url: str
     depth: int
@@ -21,34 +21,35 @@ class UFCWebScraper():
     """
     Web crawler dedicated to the ufc stats events page ;)
     """
-
-    def __init__(self):
+    def __init__(self, concurrency=20):
         """
+        concurrency (int) -> Int to specify how many workers.
         Takes in plistfile, which is the location of the proxy_list.txt
         """
         self.r_proxy = RotatingProxy()
 
+        ### Base events URL that contains all UFC events.
         self.events_all_url = 'http://ufcstats.com/statistics/events/completed?page=all'
 
         self.crawled_urls = set() 
 
-        self.concurrency = 20
+        self.concurrency = concurrency
 
+        ### Result Dictionary.
         self.results = {}
-
-        self.loop = asyncio.get_event_loop()
 
  
     async def crawl(self) -> None:
-        ### crawl through the links.
-
-        ### download the bytes needed to process the listing, 
-        ### submit the task to worker threads, where they then process with beautiful soup, and commit to the DB.
+        """
+        Starts concurrent workers, and starts scrapping.
+        """
 
         self.task_queue = asyncio.Queue()
 
+        ### initial message.
         task_message = TaskQueueMessage(self.events_all_url,'', 0, 0)
 
+        ### put it into the Q.
         self.task_queue.put_nowait(task_message)
 
         print("Starting workers")
@@ -64,12 +65,11 @@ class UFCWebScraper():
         if self.r_proxy.session:
             await self.r_proxy.session.close()
 
-    async def worker(self):
+    async def worker(self) -> None:
         """
         Gets a url from the task queue, and then crawls on the page.
         """
         while True:
-
             ### if queue is empty, leave
             if not self.task_queue:
                 break
@@ -91,16 +91,22 @@ class UFCWebScraper():
                 print("Ran into Exception")
                 print(e)
             else:
-                ### update results
+                ### update results based on depth.
+                ### results will be hashed by links
+                
                 if task.depth == 0:
+                    ### This depth inserts every event detail into results. Set key to event link
                     for it,event in enumerate(data):
                         self.results[event['link']] = event
                 elif task.depth == 1:
-                    self.results[task.url]['bouts'] = data
+                    ### Next depth inserts overall bout statistics to the corresponding event URL.
+                    ### Data here is a dictionary hashed by FIGHT URL.
+                    self.results[url]['bouts'] = data
                 elif task.depth == 2:
-                    self.results[task.parent_url]['bouts'][task.url].update(data)
+                    ### This depth inserts fighting statistics to the corresponding FIGHT URL.
+                    ### parent url in this case is event URL.
+                    self.results[task.parent_url]['bouts'][url].update(data)
                         
-
                 ### insert new links into the queue.
                 for link in links.difference(self.crawled_urls):
                     task_message = TaskQueueMessage(link,task.url, task.depth + 1, 0)
@@ -119,22 +125,27 @@ class UFCWebScraper():
         Returns:
             Tuple[str,Set[str],str]: [description]
         """
-        #print(url,depth)
         ### Depth 0 -> events_all_url page. What we do here is generate the url list.
         ### Depth 1 -> An events page with all the bouts.
         ### Depth 2 -> a Bouts page.
 
         if depth == 0:
             html = await self.r_proxy._make_request(url)
+            ### links -> a set of all event URLs that need to be scrapped in depth 1.
+            ### data -> List of general event information. dict(link,location,name,date)
             links, data = self.parse_all_events_page(html)
         elif depth == 1:
             html = await self.r_proxy._make_request(url)
+            ### links -> a set of all BOUT URLs that need to be scrapped in depth 2
+            ### data (dict) -> Data on all bouts that contain general bout info.
+            ### Data is hashbed by the particular BOUT URL
             links, data = self.parse_event_page(html)
         elif depth == 2:
             html = await self.r_proxy._make_request(url)
+            ### data -> Fight stastics on a particular bout
             data = self._parse_striking_stats(html)
+            ### no more links to process.
             links = set()
-            
         else:
             html = ''
             links = set()
@@ -152,27 +163,30 @@ class UFCWebScraper():
         payload = soup.find('table', {'class', 'b-statistics__table-events'})
         payload = payload.find_all('tr')
 
-        links = set() 
+        event_links = set() 
         event_data = []
         for row in payload[3:4]:
             try:
+                ### Grab href and anchor text.
                 link_el = row.find('a',href=True)
                 event_name = link_el.get_text(strip=True)
                 link = link_el['href']
-                links.add(link)
+                event_links.add(link)
 
+                ### grab date
                 date_el = row.find('span')
                 date= date_el.get_text(strip=True)
 
+                ### grab location
                 loc_el = row.find_all('td')[1]
                 loc = loc_el.get_text(strip=True)
-            except AttributeError as e:
+            except AttributeError:
                 print("Unable to parse current row.")
                 continue
             else:
                 event_data.append(dict(link=link,name=event_name,date=date,locaction=loc))
 
-        return links,event_data
+        return event_links,event_data
 
     def parse_event_page(self, data:str) -> Tuple[Set[str],List[dict]]:
         """
@@ -188,13 +202,11 @@ class UFCWebScraper():
         fight_dict = {} 
         bout_links = set() 
         for listing in payload:
+            ### populate general bout information
             url,bout_stats = self._parse_listing(listing)
-            ### this is the bout number
-            #bout_stats['link'] = url 
             fight_dict[url] = bout_stats
         
             bout_links.add(url)
-           
 
         return bout_links,fight_dict
     
@@ -227,12 +239,7 @@ class UFCWebScraper():
             fight_stats['Loser'] = 'NA' 
             fight_stats['Result'] = result
 
-        #now we populate striking,td,sub statistics
-        #striking_json = {}
-        #striking_json2 = {}
         fight_details_url = data['data-link']
-        #data_bytes = self.r_proxy.getRawHTML(fight_details_url)
-        #self._parse_striking_stats(data_bytes,fight_stats) 
 
         return fight_details_url,fight_stats
 
