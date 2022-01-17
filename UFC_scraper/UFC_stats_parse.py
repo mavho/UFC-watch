@@ -13,6 +13,7 @@ from rotatingProxy.rotatingProxy import RotatingProxy
 @dataclass
 class TaskQueueMessage:
     url: str
+    parent_url: str
     depth: int
     retry_count: int
 
@@ -33,7 +34,7 @@ class UFCWebScraper():
 
         self.concurrency = 20
 
-        self.results = []
+        self.results = {}
 
         self.loop = asyncio.get_event_loop()
 
@@ -46,7 +47,7 @@ class UFCWebScraper():
 
         self.task_queue = asyncio.Queue()
 
-        task_message = TaskQueueMessage(self.events_all_url, 0, 0)
+        task_message = TaskQueueMessage(self.events_all_url,'', 0, 0)
 
         self.task_queue.put_nowait(task_message)
 
@@ -85,23 +86,29 @@ class UFCWebScraper():
 
             ### crawl the page.
             try:
-                url,links,html = await self.crawl_page(task.url,task.depth)
+                url,links,html,data = await self.crawl_page(task.url,task.depth)
             except Exception as e:
                 print("Ran into Exception")
                 print(e)
             else:
-                #self.results.append(self.parse(url,links,html))
-                if links:
-                    self.results.append(links)
+                ### update results
+                if task.depth == 0:
+                    for it,event in enumerate(data):
+                        self.results[event['link']] = event
+                elif task.depth == 1:
+                    self.results[task.url]['bouts'] = data
+                elif task.depth == 2:
+                    self.results[task.parent_url]['bouts'] = data
+                        
 
                 ### insert new links into the queue.
                 for link in links.difference(self.crawled_urls):
-                    task_message = TaskQueueMessage(link, task.depth + 1, 0)
+                    task_message = TaskQueueMessage(link,task.url, task.depth + 1, 0)
                     await self.task_queue.put(task_message)
             finally:
                 self.task_queue.task_done()
 
-    async def crawl_page(self,url:str,depth:int) -> Tuple[str,Set[str],str]:
+    async def crawl_page(self,url:str,depth:int) -> Tuple[str,Set[str],str,dict]:
         """
         Grabs a webpage and returns all data from it.
 
@@ -119,22 +126,22 @@ class UFCWebScraper():
 
         if depth == 0:
             html = await self.r_proxy._make_request(url)
-            links = self.generate_url_list(html)
+            links, data = self.parse_all_events_page(html)
+        elif depth == 1:
+            html = await self.r_proxy._make_request(url)
+            links, data = self.parse_event_page(html)
+        elif depth == 2:
+            html = await self.r_proxy._make_request(url)
+            links, data = self.parse_event_page(html)
+            
         else:
             html = ''
             links = set()
+            data = None
 
-        return url,links,html
+        return url,links,html,data
 
-    async def get_results(self) -> List:
-        await self.crawl()
-        
-        return self.results
-
-
-
-        
-    def generate_url_list(self, data:str) -> Set[str]:
+    def parse_all_events_page(self, data:str) -> Tuple[Set[str],List[str]]:
         """
         Given html data of the event list on the UFC website,
 
@@ -142,21 +149,35 @@ class UFCWebScraper():
         """
         soup = BeautifulSoup(data,'lxml') 
         payload = soup.find('table', {'class', 'b-statistics__table-events'})
-        payload = payload.find_all('a', href=True)
+        payload = payload.find_all('tr')
 
-        result = set() 
-        for listing in payload:
-            #row = {}
-            #listing['href']
-            #row['event'] = listing.get_text(strip=True)
-            #row['link'] = listing['href']
-            result.add(listing['href'])
+        links = set() 
+        event_data = []
+        for row in payload[3:4]:
+            try:
+                link_el = row.find('a',href=True)
+                event_name = link_el.get_text(strip=True)
+                link = link_el['href']
+                links.add(link)
 
-        return result
+                date_el = row.find('span')
+                date= date_el.get_text(strip=True)
 
-    def parse_event_fights(self, data):
+                loc_el = row.find_all('td')[1]
+                loc = loc_el.get_text(strip=True)
+            except AttributeError as e:
+                print("Unable to parse current row.")
+                continue
+            else:
+                event_data.append(dict(link=link,name=event_name,date=date,locaction=loc))
+
+        return links,event_data
+
+    def parse_event_page(self, data:str) -> Tuple[List[str],List[dict]]:
         """
-        Returns a list with all of the fight stats of each bout
+        Given html data of an event page.
+        
+        Create a listing of all fights.
         """
         soup = BeautifulSoup(data, 'lxml')
         payload = soup.find('tbody', {'class', 'b-fight-details__table-body'})
@@ -164,32 +185,19 @@ class UFCWebScraper():
         payload = payload.find_all('tr', {'class', 'b-fight-details__table-row'})
         
         fight_list = []
-        for listing in payload:
-            fight_list.append(self._parse_listing(listing))
-           
-        return fight_list
-    
-    def generate_event_bout_list(self,payload):
-        """
-        Returns a list with all of the fighter's names as a tuple
-        [(Mcgregor, Diaz)]
-        """
-        soup = BeautifulSoup(payload, 'lxml')
-        payload = soup.find('tbody', {'class', 'b-fight-details__table-body'})
-
-        payload = payload.find_all('tr', {'class', 'b-fight-details__table-row'})
+        bout_links = []
+        for it,listing in enumerate(payload):
+            bout_stats,url = self._parse_listing(listing)
+            ### this is the bout number
+            #bout_stats['num'] = it
+            fight_list.append(bout_stats)
         
-        fight_list = []
-        for listing in payload:
-            payload = listing.find_all('td')
-            fighter_1 = payload[1].contents[1].get_text(strip=True)
-            fighter_2 = payload[1].contents[3].get_text(strip=True)
-            bout = (fighter_1,fighter_2)
-            fight_list.append(bout)
+            bout_links.append(url)
+           
 
-        return fight_list
+        return bout_links,fight_list
     
-    def _parse_listing(self, data):
+    def _parse_listing(self, data:str) -> Tuple[dict,str]:
         """
         Parse the contents section of a td. Populates a json called fight_stats
         This looks at main bout info: Time, Round, Method, WeightClass, winner,loser, res
@@ -207,14 +215,6 @@ class UFCWebScraper():
         fighter_1 = payload[1].contents[1].get_text(strip=True)
         fighter_2 = payload[1].contents[3].get_text(strip=True)
 
-        striking_json = {}
-        striking_json2 = {}
-        #now we populate striking,td,sub statistics
-        fight_details_url = data['data-link']
-        data_bytes = self.r_proxy.getRawHTML(fight_details_url)
-        self._parse_striking_stats(data_bytes,fight_stats) 
-
-
         result = payload[0].get_text(strip=True)
 
         if result == 'win':
@@ -226,7 +226,15 @@ class UFCWebScraper():
             fight_stats['Loser'] = 'NA' 
             fight_stats['Result'] = result
 
-        return fight_stats
+        #now we populate striking,td,sub statistics
+        #striking_json = {}
+        #striking_json2 = {}
+        fight_details_url = data['data-link']
+        #data_bytes = self.r_proxy.getRawHTML(fight_details_url)
+        #self._parse_striking_stats(data_bytes,fight_stats) 
+
+        print(fight_stats)
+        return fight_stats,fight_details_url
 
     #given fight details, parse bout statistics    
     #New link so have to open another soup obj
@@ -273,3 +281,29 @@ class UFCWebScraper():
 
         fight_stats['Red'] = red_stats
         fight_stats['Blue'] = blue_stats
+
+    def generate_event_bout_list(self,payload):
+        """
+        Returns a list with all of the fighter's names as a tuple
+        [(Mcgregor, Diaz)]
+        """
+        soup = BeautifulSoup(payload, 'lxml')
+        payload = soup.find('tbody', {'class', 'b-fight-details__table-body'})
+
+        payload = payload.find_all('tr', {'class', 'b-fight-details__table-row'})
+        
+        fight_list = []
+        for listing in payload:
+            payload = listing.find_all('td')
+            fighter_1 = payload[1].contents[1].get_text(strip=True)
+            fighter_2 = payload[1].contents[3].get_text(strip=True)
+            bout = (fighter_1,fighter_2)
+            fight_list.append(bout)
+
+        return fight_list
+    
+    async def get_results(self) -> List:
+        await self.crawl()
+        
+        return self.results
+        
