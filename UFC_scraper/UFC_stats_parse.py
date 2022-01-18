@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Set, Iterable, List, Tuple, Dict, Optional
 
 import asyncio, re
+import traceback
 
 from rotatingProxy.rotatingProxy import RotatingProxy
 
@@ -21,7 +22,7 @@ class UFCWebScraper():
     """
     Web crawler dedicated to the ufc stats events page ;)
     """
-    def __init__(self, concurrency=20):
+    def __init__(self, concurrency=20,start=0,end=None):
         """
         concurrency (int) -> Int to specify how many workers.
         Takes in plistfile, which is the location of the proxy_list.txt
@@ -34,6 +35,10 @@ class UFCWebScraper():
         self.crawled_urls = set() 
 
         self.concurrency = concurrency
+        ### Start and end.
+        self.start=start
+        if end:
+            self.end = end
 
         ### Result Dictionary.
         self.results = {}
@@ -88,8 +93,8 @@ class UFCWebScraper():
             try:
                 url,links,html,data = await self.crawl_page(task.url,task.depth)
             except Exception as e:
+                print(traceback.format_exc())
                 print("Ran into Exception")
-                print(e)
             else:
                 ### update results based on depth.
                 ### results will be hashed by links
@@ -165,7 +170,7 @@ class UFCWebScraper():
 
         event_links = set() 
         event_data = []
-        for row in payload[3:4]:
+        for row in payload[self.start:self.end]:
             try:
                 ### Grab href and anchor text.
                 link_el = row.find('a',href=True)
@@ -184,7 +189,7 @@ class UFCWebScraper():
                 print("Unable to parse current row.")
                 continue
             else:
-                event_data.append(dict(link=link,name=event_name,date=date,locaction=loc))
+                event_data.append(dict(link=link,name=event_name,date=date,location=loc))
 
         return event_links,event_data
 
@@ -311,7 +316,26 @@ class UFCWebScraper():
 
         return fight_list
     
-    async def get_results(self) -> List:
+    async def get_results(self,start,end=None) -> List:
+        """
+        Crawl from start -> end.
+        
+        If you want the most recent bout information, start=2, end = 3
+
+        If you want the upcoming bout information, start = 1, end = 2
+
+        if You want everything, start = 0, don't specify end
+
+        Args:
+            start ([int]): [Bout to start at.]
+            end ([int]): [Bout to end.]
+
+        Returns:
+            List: [description]
+        """
+        self.start = start + 1
+        self.end = end + 1
+        
         await self.crawl()
         
         return self.results
