@@ -97,4 +97,5 @@ class ConfigURL():
 def request_not_supported(e):
     return("this method is unsupported"), 405
 if __name__ == '__main__':
+    print(app.config)
     app.run(host=app.config['HOST'], debug=app.config['DEBUG'])

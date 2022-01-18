@@ -4,8 +4,7 @@ class Config(object):
     """
     Universal Config, stuff here should work for development and production!
     """
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'event_stats.db')
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'UFC_API.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
 
