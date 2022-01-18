@@ -1,17 +1,11 @@
-from UFC_stats_parse import UFC_Stats_Parser
+from UFC_stats_parse import UFCWebScraper 
+import asyncio
+import db_helper
+
 def main():
-    #url = 'http://www.ufcstats.com/statistics/events/completed?page=all'
-    url = 'http://http://www.ufcstats.com/statistics/events/completed'
-    parser = UFC_Stats_Parser()
-    print('Get current fights test------------------')    
+    scraper = UFCWebScraper()
 
-
-    #url = 'http://www.ufcstats.com/event-details/94a5aaf573f780ad'
-    data_bytes = parser.get_raw_html(url)
-    url_list = parser.generate_url_list(data_bytes)
-    fight_list=parser.generate_Event_Bout_list(url_list[0])
-    print(fight_list)
-
+    data = asyncio.run(scraper.get_results(start=2,end=3))
 
 
 
