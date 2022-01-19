@@ -43,6 +43,13 @@ class EventResouce(Resource):
     """
     def get(self,event_id):
         msg = {}
+        if not isinstance(event_id, int):
+            msg['Error'] = "Invalid event_id. Should be int"
+            return make_response(msg,400)
+        elif len(str(event_id)) >= 6:
+            msg['Error'] = "Invalid event_id."
+            return make_response(msg,400)
+
         bout_schema = BoutSchema()
         event_schema = EventSchema()
         print("Recieved " + str(event_id), file=sys.stderr)
@@ -53,7 +60,7 @@ class EventResouce(Resource):
         for bout in rows:
             #print(bout_schema.dump(bout),file=sys.stderr)
             msg['bouts'].append(bout_schema.dump(bout))
-        return msg, 200
+        return make_response(jsonify(msg),200)
 
 class EventsResource(Resource):
     """
@@ -63,6 +70,15 @@ class EventsResource(Resource):
     """
     def get(self, param):
         msg = {}
+
+        if not isinstance(param, str):
+            msg['Error'] = "Invalid param. Should be string."
+            return make_response(msg,400)
+        elif len(param) >= 64:
+            msg['Error'] = "Invalid param."
+            return make_response(msg,400)
+        
+
         event_schema = EventSchema()
         msg['events'] = []
         error_code = 200
@@ -78,7 +94,7 @@ class EventsResource(Resource):
             msg['Error'] = "Invalid url, param needs to be all or existing."
             error_code = 400
             
-        return msg,error_code
+        return make_response(jsonify(msg),error_code)
 
 api.add_resource(PredictionsResource,'/predictions')
 api.add_resource(EventResouce,'/event/<int:event_id>')
