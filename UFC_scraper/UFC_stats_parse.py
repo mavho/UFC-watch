@@ -60,7 +60,6 @@ class UFCWebScraper():
         print("Starting workers")
         workers = [asyncio.create_task(self.worker()) for i in range(self.concurrency)]
 
-        print("Working")
         await self.task_queue.join()
 
         for w in workers:
@@ -87,6 +86,7 @@ class UFCWebScraper():
                 self.task_queue.task_done()
                 continue
                 
+            print(f"Q size: {self.task_queue.qsize()}")
             self.crawled_urls.add(task.url)
 
             ### crawl the page.
@@ -334,7 +334,10 @@ class UFCWebScraper():
             List: [description]
         """
         self.start = start + 1
-        self.end = end + 1
+        if end is not None:
+            self.end = end + 1
+        else:
+            self.end = end
         
         await self.crawl()
         

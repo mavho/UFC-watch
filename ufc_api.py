@@ -65,6 +65,7 @@ class EventsResource(Resource):
         msg = {}
         event_schema = EventSchema()
         msg['events'] = []
+        error_code = 200
         event_rows = Events.query.filter_by().all()
         if param == "all":
             for event in event_rows:
@@ -73,29 +74,21 @@ class EventsResource(Resource):
             for event in event_rows:
                 if Bouts.query.filter_by(event_id=event.id).first() != None:
                     msg['events'].append(event_schema.dump(event))
-        return msg,200
+        else:
+            msg['Error'] = "Invalid url, param needs to be all or existing."
+            error_code = 400
+            
+        return msg,error_code
 
 api.add_resource(PredictionsResource,'/predictions')
 api.add_resource(EventResouce,'/event/<int:event_id>')
 api.add_resource(EventsResource,'/events/<string:param>')
 
-class ConfigURL():
-    """
-    HOlds all the URLS needed to find the webpages, etc
-    """
-    def __init__(self):	
-        #self.url = 'http://www.ufcstats.com/event-details/94a5aaf573f780ad'	
-        self.completed_page_url = 'http://www.ufcstats.com/statistics/events/completed?page=all'	
-        self.bout_url = 'http://www.ufcstats.com/event-details/a79bfbc01b2264d6'	
-        self.live_url = ""	
-
-    def alterLiveURL(self):	
-        self.live_url = "whatever"	
-        return self.live_url
 
 @app.errorhandler(405)
 def request_not_supported(e):
     return("this method is unsupported"), 405
+
 if __name__ == '__main__':
     print(app.config)
     app.run(host=app.config['HOST'], debug=app.config['DEBUG'])
