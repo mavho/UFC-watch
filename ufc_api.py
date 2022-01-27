@@ -70,7 +70,6 @@ class EventsResource(Resource):
     """
     def get(self, param):
         msg = {}
-
         if not isinstance(param, str):
             msg['Error'] = "Invalid param. Should be string."
             return make_response(msg,400)

@@ -1,4 +1,4 @@
-from ufc_api import db, ConfigURL
+from ufc_api import db 
 import os
 from models import Events, Bouts
 
