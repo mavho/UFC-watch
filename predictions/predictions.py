@@ -326,6 +326,3 @@ class Predictions():
 
         out_json['predictions'] = payload
         return out_json 
-
-if __name__ == '__main__':
-    main()
