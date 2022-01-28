@@ -1,9 +1,6 @@
-from config import Config
-from models import Events, Bouts
 import pandas as pd
-import pickle
+import pickle, os
 from typing import Any,Dict, Sequence, Tuple, List
-import sys, json,os
 
 #sklearn modules
 from sklearn.model_selection import train_test_split
@@ -249,21 +246,18 @@ class Predictions():
 
         def predict_from_boutListing(fight_list):
             #(blue, red)
-            fobj = open(path + "/bout_list.txt", "r")
-            odd=False
-            red_fighter=''
-            blue_fighter=''
-            out_json['event'] = fobj.readline().strip('\n')
-            ### fobj, each line is a fighter name.
-            ### every 2 lines is one bout.
-            for line in fobj:
-                if(odd):
-                    blue_fighter = line.replace("'","''")
-                    fight_list.append((red_fighter.strip('\n'),blue_fighter.strip('\n')))
-                    odd=False
-                elif(not odd):
-                    red_fighter = line.replace("'","''")
-                    odd=True
+
+            with open(path + "/bout_list.txt", "r") as fobj:
+                blue_fighter=''
+                out_json['event'] = fobj.readline().strip('\n')
+                ### fobj, each line is a fighter name.
+                ### every 2 lines is one bout.
+                for line in fobj:
+                    red_fighter,blue_fighter = line.split('|')
+
+                    red_fighter = red_fighter.replace("'","''").strip('\n')
+                    blue_fighter = blue_fighter.replace("'","''").strip('\n')
+                    fight_list.append((red_fighter,blue_fighter))
 
             data = []
             for(red_fighter,blue_fighter) in fight_list:

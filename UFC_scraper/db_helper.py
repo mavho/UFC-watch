@@ -2,24 +2,6 @@ from ufc_api import db
 import os
 from models import Events, Bouts
 
-def get_latest_fighters(UFC_parser,event_list):
-    """
-    Args: UFC_PARSER, event_list
-    Uses the UFC Parser to open up a link from the event list,
-    and write out the bouts from that event to bout_list.txt
-    """
-    event = event_list[0]['event']
-    data_bytes = UFC_parser.getRawHTML(event_list[0]['link'])
-    result = UFC_parser.generate_event_bout_list(data_bytes)
-    print(result,flush=True)
-    fopn = open('/var/www/UFC_API/bout_list.txt', 'w')
-    fopn.write(event+'\n')
-    for bout in result:
-        fopn.write(bout[0]+"\n")
-        fopn.write(bout[1]+"\n")
-    fopn.close()
-
-
 def populate_bouts_fighters_table(event_data):
     """
     Args: UFC_PARSER, event_list

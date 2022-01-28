@@ -148,7 +148,10 @@ class UFCWebScraper():
         elif depth == 2:
             html = await self.r_proxy._make_request(url)
             ### data -> Fight stastics on a particular bout
-            data = self._parse_striking_stats(html)
+            try:
+                data = self._parse_striking_stats(html)
+            except Exception:
+                data = {}
             ### no more links to process.
             links = set()
         else:
@@ -234,6 +237,8 @@ class UFCWebScraper():
         fighter_2 = payload[1].contents[3].get_text(strip=True)
 
         result = payload[0].get_text(strip=True)
+        fight_stats['r_fighter'] = fighter_1
+        fight_stats['b_fighter'] = fighter_2
 
         if result == 'win':
             fight_stats['Winner'] = fighter_1
