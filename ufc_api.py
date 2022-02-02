@@ -11,8 +11,10 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 if os.environ.get('FP_CONFIG',"DEV") == 'PROD':
+    print("production")
     app.config.from_object(ProdConfig)
 else:
+    print("dev")
     app.config.from_object(DevConfig)
 
 app.debug = app.config['DEBUG']
@@ -29,12 +31,9 @@ class PredictionsResource(Resource):
     for the predictions module
     """
     def get(self):
-        print(app.config['ROUTES']['basedir'],file=sys.stderr)
-        print(app.config['HOST'],file=sys.stderr)
-        #subprocess.call(['python3','predictions.py'])
         with open(app.config['ROUTES']['basedir'] + '/pred_fights.json') as jf:
             data = json.load(jf)
-        return jsonify(data), 200
+        return make_response(jsonify(data), 200)
 
 
 class EventResouce(Resource):
