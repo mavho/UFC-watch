@@ -338,6 +338,9 @@ class UFCWebScraper():
         Returns:
             List: [description]
         """
+        self.results = {}
+        self.crawled_urls = set()
+
         self.start = start + 1
         if end is not None:
             self.end = end + 1
