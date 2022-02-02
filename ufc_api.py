@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, abort, make_response, request, url_for,render_template
+from flask import Flask, jsonify, abort, make_response, request, url_for
 from flask_restful import Resource, Api 
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -10,10 +10,12 @@ import os,sys, json
 app = Flask(__name__)
 app.config.from_object(Config)
 
-if os.environ.get('FP_CONFIG',"PROD") == 'DEV':
-    app.config.from_object(DevConfig)
-else:
+if os.environ.get('FP_CONFIG',"DEV") == 'PROD':
+    print("production")
     app.config.from_object(ProdConfig)
+else:
+    print("dev")
+    app.config.from_object(DevConfig)
 
 app.debug = app.config['DEBUG']
 api=Api(app)
@@ -29,7 +31,7 @@ class PredictionsResource(Resource):
     for the predictions module
     """
     def get(self):
-        with open(app.config['ROUTES']['basedir'] + 'pred_fights.json') as jf:
+        with open(app.config['ROUTES']['basedir'] + '/pred_fights.json') as jf:
             data = json.load(jf)
         return make_response(jsonify(data), 200)
 
@@ -40,9 +42,16 @@ class EventResouce(Resource):
     """
     def get(self,event_id):
         msg = {}
+        if not isinstance(event_id, int):
+            msg['Error'] = "Invalid event_id. Should be int"
+            return make_response(msg,400)
+        elif len(str(event_id)) >= 6:
+            msg['Error'] = "Invalid event_id."
+            return make_response(msg,400)
+
         bout_schema = BoutSchema()
         event_schema = EventSchema()
-        #print("Recieved " + str(event_id), file=sys.stderr)
+        print("Recieved " + str(event_id), file=sys.stderr)
         rows = Bouts.query.filter_by(event_id=str(event_id)).all()
         event = Events.query.filter_by(id=event_id).first()
         msg['event'] = event_schema.dump(event)
@@ -50,7 +59,7 @@ class EventResouce(Resource):
         for bout in rows:
             #print(bout_schema.dump(bout),file=sys.stderr)
             msg['bouts'].append(bout_schema.dump(bout))
-        return msg, 200
+        return make_response(jsonify(msg),200)
 
 class EventsResource(Resource):
     """
@@ -60,8 +69,17 @@ class EventsResource(Resource):
     """
     def get(self, param):
         msg = {}
+        if not isinstance(param, str):
+            msg['Error'] = "Invalid param. Should be string."
+            return make_response(msg,400)
+        elif len(param) >= 64:
+            msg['Error'] = "Invalid param."
+            return make_response(msg,400)
+        
+
         event_schema = EventSchema()
         msg['events'] = []
+        error_code = 200
         event_rows = Events.query.filter_by().all()
         if param == "all":
             for event in event_rows:
@@ -70,21 +88,21 @@ class EventsResource(Resource):
             for event in event_rows:
                 if Bouts.query.filter_by(event_id=event.id).first() != None:
                     msg['events'].append(event_schema.dump(event))
-        return msg,200
+        else:
+            msg['Error'] = "Invalid url, param needs to be all or existing."
+            error_code = 400
+            
+        return make_response(jsonify(msg),error_code)
 
+api.add_resource(PredictionsResource,'/predictions')
+api.add_resource(EventResouce,'/event/<int:event_id>')
+api.add_resource(EventsResource,'/events/<string:param>')
 
-class FrontEndResource(Resource):
-    def get(self):
-        headers = {'Content-Type':'text/html'}
-        return make_response(render_template('_layouts/front_layout.html'),200,headers)
-
-api.add_resource(PredictionsResource,'/api/predictions')
-api.add_resource(EventResouce,'/api/event/<int:event_id>')
-api.add_resource(EventsResource,'/api/events/<string:param>')
-api.add_resource(FrontEndResource,'/web')
 
 @app.errorhandler(405)
 def request_not_supported(e):
     return("this method is unsupported"), 405
+
 if __name__ == '__main__':
+    print(app.config)
     app.run(host=app.config['HOST'], debug=app.config['DEBUG'])

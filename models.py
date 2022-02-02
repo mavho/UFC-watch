@@ -2,7 +2,9 @@ from ufc_api import db, ma
 #Event table
 class Events(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    event = db.Column(db.String(48),index=True)
+    event = db.Column(db.String(64),index=True)
+    location = db.Column(db.String(64))
+    date = db.Column(db.String(64))
 
     def __repr__(self):
         return '{}'.format(self.id)
@@ -12,40 +14,42 @@ class Bouts(db.Model):
     ###Bout statistics
     id = db.Column(db.Integer, primary_key=True)
     event_id = db.Column(db.Integer, index=True)
-    weight_class = db.Column(db.String(32), index=True)
-    red_fighter = db.Column(db.String(64), index=True)
-    blue_fighter = db.Column(db.String(64), index=True)
-    winner = db.Column(db.String(64), index=True)
-    loser = db.Column(db.String(64), index=True)
-    result = db.Column(db.String(32), index=True)
-    end_round = db.Column(db.Integer, index=True)
-    time = db.Column(db.String(64), index=True)
-    method = db.Column(db.String(32), index=True)
+    weight_class = db.Column(db.String(32))
+    red_fighter = db.Column(db.String(64))
+    blue_fighter = db.Column(db.String(64))
+    winner = db.Column(db.String(64))
+    loser = db.Column(db.String(64))
+    result = db.Column(db.String(32))
+    end_round = db.Column(db.Integer)
+    time = db.Column(db.String(64))
+    method = db.Column(db.String(32))
     ###
     ###Striking Stats
     ###
-    b_KD = db.Column(db.Integer, index=True)
-    r_KD = db.Column(db.Integer, index=True)
-    b_SIGSTR = db.Column(db.String(12), index=True)
-    r_SIGSTR = db.Column(db.String(12), index=True)
-    b_SIGSTR_PRCT = db.Column(db.String(12),index=True)
-    r_SIGSTR_PRCT = db.Column(db.String(12),index=True)
-    b_TTLSTR = db.Column(db.String(12), index=True)
-    r_TTLSTR = db.Column(db.String(12), index=True)
-    b_TD= db.Column(db.Integer, index=True)
-    r_TD= db.Column(db.Integer, index=True)
-    b_TD_PRCT = db.Column(db.String(12),index=True)
-    r_TD_PRCT = db.Column(db.String(12),index=True)
-    b_SUB= db.Column(db.Integer, index=True)
-    r_SUB= db.Column(db.Integer, index=True)
-    b_PASS= db.Column(db.Integer, index=True)
-    r_PASS= db.Column(db.Integer, index=True)
+    b_KD = db.Column(db.Integer)
+    r_KD = db.Column(db.Integer)
+    b_SIGSTR = db.Column(db.String(12))
+    r_SIGSTR = db.Column(db.String(12))
+    b_SIGSTR_PRCT = db.Column(db.String(12))
+    r_SIGSTR_PRCT = db.Column(db.String(12))
+    b_TTLSTR = db.Column(db.String(12))
+    r_TTLSTR = db.Column(db.String(12))
+    b_TD= db.Column(db.Integer)
+    r_TD= db.Column(db.Integer)
+    b_TD_PRCT = db.Column(db.String(12))
+    r_TD_PRCT = db.Column(db.String(12))
+    b_SUB= db.Column(db.Integer)
+    r_SUB= db.Column(db.Integer)
+    b_PASS= db.Column(db.Integer)
+    r_PASS= db.Column(db.Integer)
 
 class EventSchema(ma.SQLAlchemySchema):
     class Meta:
         model = Events
     id = ma.auto_field()
     event = ma.auto_field()
+    date = ma.auto_field()
+    location = ma.auto_field()
 
 class BoutSchema(ma.SQLAlchemySchema):
     class Meta:
