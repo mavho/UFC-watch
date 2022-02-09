@@ -7,7 +7,6 @@ test.py
 *.db
 trained_Kev.sav
 .vscode/*
-requirements.txt
 migrations/*
 */__pycache__/*
 *.code-workspace
