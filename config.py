@@ -19,4 +19,5 @@ class DevConfig(Config):
 class ProdConfig(Config):
     HOST="0.0.0.0"
     DEBUG=False
+    PORT=5000
     ROUTES={'basedir':basedir}
