@@ -20,26 +20,21 @@ var json_obj = JSON.parse(payload);
 ### Events
 You can issue a GET request to the events endpoint:
 ```
-curl -s --request GET --header Content-Type: application/json --write-out \n%{http_code}\n http://ufcwatch.pythonanywhere/events/all
+curl -s --request GET --header Content-Type: application/json --write-out \n%{http_code}\n http://13.52.239.45/api/events/all
 ```
-Specifying all will grab all the events with their corresponding id. If you specify existing
-```
-curl -s --request GET --header Content-Type: application/json --write-out \n%{http_code}\n http://ufcwatch.pythonanywhere/events/existing
-```
-you'll get only the events that have bouts.
+Specifying all will grab all the events with their corresponding name, location, date, and event id.
 
 ### Event
 The event endpoint has the form
 ```
-/event/id
+/api/event/id
 ```
+The json returned has two keys, bouts and event data.
 ### Predictions
 You can get the latest event predictions from the predictions endpoint
 ```
-/predictions
+/api/predictions
 ```
 
 ##### TODO's
 - prediction route with 2 fighters (started)
-- fighters endpoint
-- better model

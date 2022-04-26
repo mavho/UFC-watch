@@ -84,10 +84,6 @@ class EventsResource(Resource):
         if param == "all":
             for event in event_rows:
                 msg['events'].append(event_schema.dump(event))
-        elif param == "existing":
-            for event in event_rows:
-                if Bouts.query.filter_by(event_id=event.id).first() != None:
-                    msg['events'].append(event_schema.dump(event))
         else:
             msg['Error'] = "Invalid url, param needs to be all or existing."
             error_code = 400
