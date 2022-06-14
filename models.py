@@ -65,19 +65,32 @@ class BoutSchema(ma.SQLAlchemySchema):
     time = ma.auto_field()
     method = ma.auto_field()
 
-    b_KD = ma.auto_field()
-    r_KD = ma.auto_field()
-    b_SIGSTR = ma.auto_field()
-    r_SIGSTR = ma.auto_field()
-    b_SIGSTR_PRCT = ma.auto_field()
-    r_SIGSTR_PRCT = ma.auto_field()
-    b_TTLSTR = ma.auto_field()
-    r_TTLSTR = ma.auto_field()
-    b_TD= ma.Str()
-    r_TD= ma.Str()
-    b_TD_PRCT = ma.auto_field()
-    r_TD_PRCT = ma.auto_field()
-    b_SUB= ma.Str()
-    r_SUB= ma.Str()
-    b_PASS= ma.Str()
-    r_PASS= ma.Str()
+    blue_stats = ma.Method("ser_bfighter")
+    red_stats = ma.Method("ser_rfighter")
+
+    ### parse Bout fighter stats into a dict
+    def ser_bfighter(self,obj):
+        stats = dict()
+
+        stats["KD"] = obj.b_KD
+        stats["SIGSTR"] = obj.b_SIGSTR
+        stats["SIGSTR_PRCT"] = obj.b_SIGSTR_PRCT
+        stats["TTLSTR"] = obj.b_TTLSTR
+        stats["TD"] = obj.b_TD
+        stats["TD_PRCT"] = obj.b_TD_PRCT
+        stats["SUB"] = obj.b_SUB
+        stats["PASS"] = obj.b_PASS
+        return stats
+
+    def ser_rfighter(self,obj):
+        stats = dict()
+
+        stats["KD"] = obj.r_KD
+        stats["SIGSTR"] = obj.r_SIGSTR
+        stats["SIGSTR_PRCT"] = obj.r_SIGSTR_PRCT
+        stats["TTLSTR"] = obj.r_TTLSTR
+        stats["TD"] = obj.r_TD
+        stats["TD_PRCT"] = obj.r_TD_PRCT
+        stats["SUB"] = obj.r_SUB
+        stats["PASS"] = obj.r_PASS
+        return stats
