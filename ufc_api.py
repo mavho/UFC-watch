@@ -48,8 +48,8 @@ class EventResouce(Resource):
         elif len(str(event_id)) >= 6:
             msg['Error'] = "Invalid event_id."
             return make_response(msg,400)
-
-        bout_schema = BoutSchema()
+        top_keys = set(['red_fighter','blue_fighter','winner','loser','result','time','method','end_round','event_id','blue_stats','red_stats'])
+        bout_schema = BoutSchema(only=top_keys)
         event_schema = EventSchema()
         print("Recieved " + str(event_id), file=sys.stderr)
         rows = Bouts.query.filter_by(event_id=str(event_id)).all()
