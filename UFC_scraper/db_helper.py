@@ -21,7 +21,7 @@ def populate_bouts_fighters_table(event_data):
         ### if event is not in the DB, insert it
         if event_q is None:
             ### id is auto incrementing
-            db.session.add(Events(event=event_name,date=event['date'],location=event['location']))
+            db.session.add(Events(event=event_name,date=date,location=location))
             db.session.commit()
             ### grab the event.
             event_q = Events.query.filter_by(event=event_name).first()
