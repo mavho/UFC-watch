@@ -241,7 +241,7 @@ class Predictions():
         red_fighter (str): Name of red fighter.
         blue_fighter (str): Name of blue fighter.
         """
-        if (red_fighter and not blue_fighter) or (not red_fighter and blue_fighter):
+        if (not red_fighter or not blue_fighter):
             raise Exception("Both red fighter and blue fighter must be filled.")
 
         def predict_from_boutListing(fight_list):
