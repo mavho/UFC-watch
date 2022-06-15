@@ -12,12 +12,12 @@ class Config(object):
 class DevConfig(Config):
     DEBUG=True
     ROUTES={'basedir':basedir}
-    PORT=5000
+    PORT=80
     HOST="localhost"
 
 
 class ProdConfig(Config):
     HOST="0.0.0.0"
     DEBUG=False
-    PORT=5000
+    PORT=80
     ROUTES={'basedir':basedir}
