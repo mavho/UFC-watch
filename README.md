@@ -38,3 +38,4 @@ You can get the latest event predictions from the predictions endpoint
 
 ##### TODO's
 - prediction route with 2 fighters (started)
+- fighters endpoint
