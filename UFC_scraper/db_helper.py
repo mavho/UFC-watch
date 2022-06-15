@@ -25,9 +25,17 @@ def populate_bouts_fighters_table(event_data):
             db.session.commit()
             ### grab the event.
             event_q = Events.query.filter_by(event=event_name).first()
+        else:
+            ### check if we have any bouts under this event.
+            bouts_q = Bouts.query.filter_by(event_id=int(event_q.id)).all()
+            if bouts_q:
+                print(f"event: {event_name} already exists and has bouts")
+                return
+            else:
+                print(f"event: {event_name} already exists, but has no bouts.")
 
-            for link,bout in bouts.items():
-
+        for link,bout in bouts.items():
+            try:
                 db.session.add(Bouts(event_id=int(event_q.id),time=bout['Time'],end_round=bout['Round'],
                     method=bout['Method'],result=bout['Result'],weight_class=bout['WeightClass'],
                     winner=bout['Winner'], loser=bout['Loser'],
@@ -41,6 +49,8 @@ def populate_bouts_fighters_table(event_data):
                     b_SUB=bout['Blue']['SUB'], r_SUB=bout['Red']['SUB'],
                     b_PASS=bout['Blue']['PASS'], r_PASS=bout['Red']['PASS']
                     ))
-        else:
-            print(f"event: {event_name} already exists.")
+            ### key error is generally produced from the new fight (we don't know who is red)
+            except KeyError:
+                pass
+
     db.session.commit()
