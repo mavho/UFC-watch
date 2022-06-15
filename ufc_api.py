@@ -4,6 +4,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
+from predictions.predictions import Predictions
 from config import Config, DevConfig, ProdConfig
 import os,sys, json
 
@@ -30,9 +31,29 @@ class PredictionsResource(Resource):
     """
     for the predictions module
     """
-    def get(self):
-        with open(app.config['ROUTES']['basedir'] + '/pred_fights.json') as jf:
-            data = json.load(jf)
+    def get(self,event_id=None):
+        if not event_id:
+            with open(app.config['ROUTES']['basedir'] + '/pred_fights.json') as jf:
+                data = json.load(jf)
+            return make_response(jsonify(data), 200)
+
+        msg = []
+        if not isinstance(event_id, int):
+            msg['Error'] = "Invalid event_id. Should be int"
+            return make_response(msg,400)
+        elif len(str(event_id)) >= 6:
+            msg['Error'] = "Invalid event_id."
+            return make_response(msg,400)
+
+        PD = Predictions(db.get_engine())
+
+        data = {'predictions':[],'actual':[]}
+        rows = Bouts.query.filter_by(event_id=str(event_id)).all()
+        for bout in rows:
+            pred = PD.predict(red_fighter=bout.red_fighter,blue_fighter=bout.blue_fighter)
+            data['predictions'].append(pred['predictions'][0])
+            data['actual'].append(dict(winner=bout.winner,loser=bout.loser))
+
         return make_response(jsonify(data), 200)
 
 
@@ -90,7 +111,7 @@ class EventsResource(Resource):
             
         return make_response(jsonify(msg),error_code)
 
-api.add_resource(PredictionsResource,'/predictions')
+api.add_resource(PredictionsResource,'/predictions','/predictions/<int:event_id>')
 api.add_resource(EventResouce,'/event/<int:event_id>')
 api.add_resource(EventsResource,'/events/<string:param>')
 
