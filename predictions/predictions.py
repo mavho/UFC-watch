@@ -1,3 +1,4 @@
+from cgitb import text
 from json import load
 import pandas as pd
 import pickle, os
@@ -262,10 +263,11 @@ class Predictions():
 
             data = []
             for(red_fighter,blue_fighter) in fight_list:
-                blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + blue_fighter +"' or red_fighter='" + blue_fighter + "'"
-                red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + red_fighter +"' or red_fighter='" + red_fighter + "'"
+                ### sqlalchemy parameterized query syntax is :parameter
+                blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter= :blue_fighter or red_fighter= :blue_fighter"
+                red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter= :red_fighter or red_fighter= :red_fighter"
                 union_query = blue_fighter_query + ' UNION ' + red_fighter_query
-                fighter_frame = pd.read_sql(union_query, self.connection, params={'blue_fighter':"'" + blue_fighter + "'",'red_fighter':"'"+ red_fighter+ "'"})
+                fighter_frame = pd.read_sql(union_query, self.connection, params={'blue_fighter':blue_fighter,'red_fighter':red_fighter})
                 fighter_frame["b_win"] = 0
                 fighter_frame["r_win"] = 0
 
@@ -277,11 +279,11 @@ class Predictions():
         def predict_two_fighters(red_fighter,blue_fighter,fight_list):
             fight_list.append((red_fighter.strip('\n'), blue_fighter.strip('\n')))
             data = []
-            blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + blue_fighter +"' or red_fighter='" + blue_fighter + "'"
-            red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter='" + red_fighter +"' or red_fighter='" + red_fighter + "'"
+            ### sqlalchemy parameterized query syntax is :parameter
+            blue_fighter_query = "SELECT * FROM bouts WHERE blue_fighter= :blue_fighter or red_fighter= :blue_fighter"
+            red_fighter_query = "SELECT * FROM bouts WHERE blue_fighter= :red_fighter or red_fighter= :red_fighter"
             union_query = blue_fighter_query + ' UNION ' + red_fighter_query
-            fighter_frame = pd.read_sql(union_query, self.connection, params={'blue_fighter':"'" + blue_fighter + "'",'red_fighter':"'"+ red_fighter+ "'"})
-            print(fighter_frame)
+            fighter_frame = pd.read_sql(union_query, self.connection, params={'blue_fighter':red_fighter,'red_fighter':blue_fighter})
             fighter_frame["b_win"] = 0
             fighter_frame["r_win"] = 0
             #out_fighters is a dataframe with all the averages of the to-be predicted fighters
