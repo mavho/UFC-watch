@@ -1,3 +1,4 @@
+from json import load
 import pandas as pd
 import pickle, os
 from typing import Any,Dict, Sequence, Tuple, List
@@ -293,30 +294,32 @@ class Predictions():
 
         path = os.getcwd()
         model_filename = '/trained_Kev.sav'
-        loaded_module = pickle.load(open(path + model_filename,'rb'))
-        out_json = {}
+        
+        with open(path + model_filename,'rb') as pkl_f:
+            prediction_module = pickle.load(pkl_f)
 
-        ### List to store each bout,needed to link back to predict.
-        fight_list = []
+            out_json = {}
+            ### List to store each bout,needed to link back to predict.
+            fight_list = []
 
-        if red_fighter and blue_fighter:
-            out_fighters = predict_two_fighters(red_fighter,blue_fighter,fight_list)
-            prediction = loaded_module.predict(out_fighters[self.feature_col])
-        else:
-            out_fighters = predict_from_boutListing(fight_list)
-            prediction = loaded_module.predict(out_fighters[self.feature_col])
-
-        payload = [] 
-        ## Prediction will have values 0 or 1. If 1 it means RED fighter in that bout will win, else the BLUE fighter will win.
-        for idx,res in enumerate(prediction):
-            fight = {} 
-            if res == 1:
-                fight['Winner'] = (fight_list[idx][1])
-                fight['Loser'] = (fight_list[idx][0])
+            if red_fighter and blue_fighter:
+                out_fighters = predict_two_fighters(red_fighter,blue_fighter,fight_list)
+                prediction = prediction_module.predict(out_fighters[self.feature_col])
             else:
-                fight['Winner'] = (fight_list[idx][0])
-                fight['Loser'] = (fight_list[idx][1])
-            payload.append(fight)
+                out_fighters = predict_from_boutListing(fight_list)
+                prediction = prediction_module.predict(out_fighters[self.feature_col])
 
-        out_json['predictions'] = payload
-        return out_json 
+            payload = [] 
+            ## Prediction will have values 0 or 1. If 1 it means RED fighter in that bout will win, else the BLUE fighter will win.
+            for idx,res in enumerate(prediction):
+                fight = {} 
+                if res == 1:
+                    fight['Winner'] = (fight_list[idx][1])
+                    fight['Loser'] = (fight_list[idx][0])
+                else:
+                    fight['Winner'] = (fight_list[idx][0])
+                    fight['Loser'] = (fight_list[idx][1])
+                payload.append(fight)
+
+            out_json['predictions'] = payload
+            return out_json 
