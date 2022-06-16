@@ -47,12 +47,18 @@ class PredictionsResource(Resource):
 
         PD = Predictions(db.get_engine())
 
-        data = {'predictions':[],'actual':[]}
+        data = {'bouts':[]}
         rows = Bouts.query.filter_by(event_id=str(event_id)).all()
         for bout in rows:
             pred = PD.predict(red_fighter=bout.red_fighter,blue_fighter=bout.blue_fighter)
-            data['predictions'].append(pred['predictions'][0])
-            data['actual'].append(dict(winner=bout.winner,loser=bout.loser))
+            data['bouts'].append(dict(
+                prediction = pred['predictions'][0],
+                actual = dict(winner=bout.winner,loser=bout.loser)
+            ))
+
+        event_schema = EventSchema()
+        event = Events.query.filter_by(id=event_id).first()
+        data['event'] = event_schema.dump(event)
 
         return make_response(jsonify(data), 200)
 
