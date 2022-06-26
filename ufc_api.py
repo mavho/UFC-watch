@@ -6,7 +6,8 @@ from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
 from predictions.predictions import Predictions
 from config import Config, DevConfig, ProdConfig
-import os,sys, json
+import os,sys, json,logging
+from config_helpers import setup_logger
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -17,6 +18,11 @@ if os.environ.get('FP_CONFIG',"DEV") == 'PROD':
 else:
     print("dev")
     app.config.from_object(DevConfig)
+
+#User log
+userformatter = logging.Formatter('%(asctime)s %(message)s')
+app.logger= setup_logger('ufcwatch_api.log',userformatter, app.config['LOG_PATH'],level=logging.INFO)
+app.logger.setLevel(logging.DEBUG)
 
 app.debug = app.config['DEBUG']
 api=Api(app)
@@ -127,5 +133,5 @@ def request_not_supported(e):
     return("this method is unsupported"), 405
 
 if __name__ == '__main__':
-    print(app.config)
+    app.userlog.info(app.config)
     app.run(host=app.config['HOST'], debug=app.config['DEBUG'])

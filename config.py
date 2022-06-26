@@ -1,4 +1,5 @@
 import os
+import config_helpers
 basedir = os.path.abspath(os.path.dirname(__file__))
 class Config(object):
     """
@@ -6,6 +7,9 @@ class Config(object):
     """
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'UFC_API.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    BASEDIR = basedir
+    LOG_PATH = os.path.join(BASEDIR, 'logs')
+    config_helpers.create_directory(LOG_PATH)
     
 
 
