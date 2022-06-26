@@ -131,7 +131,3 @@ api.add_resource(EventsResource,'/events/<string:param>')
 @app.errorhandler(405)
 def request_not_supported(e):
     return("this method is unsupported"), 405
-
-if __name__ == '__main__':
-    app.userlog.info(app.config)
-    app.run(host=app.config['HOST'], debug=app.config['DEBUG'])
