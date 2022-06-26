@@ -12,6 +12,7 @@ from sklearn.linear_model import SGDClassifier
 
 from sklearn import metrics, tree
 
+
 class Predictions():
     """
     Provides methods to help train models and use them with DB data.
@@ -199,7 +200,7 @@ class Predictions():
         X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.32, random_state=0)
         return X_train, X_test, y_train, y_test
 
-    def train_predictionModel(self,model_type:str, X_train, X_test, y_train, y_test):
+    def train_predictionModel(self,model_type:str, X_train, X_test, y_train, y_test) -> List[float]:
         """
         Given the training sets, and model_type, trains a prediction model based on that model type.
 
@@ -227,10 +228,15 @@ class Predictions():
         filename = 'trained_Kev.sav'
         pickle.dump(model, open(filename, 'wb'))
 
+        accuracy = metrics.accuracy_score(y_test,y_pred)
+        precision = metrics.precision(y_test,y_pred)
+        recall = metrics.recall_score(y_test,y_pred)
         print('################################################################################')
-        print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
-        print("Precision:",metrics.precision_score(y_test, y_pred))
-        print("Recall:",metrics.recall_score(y_test, y_pred))
+        print("Accuracy:",accuracy)
+        print("Precision:",precision)
+        print("Recall:",recall)
+
+        return accuracy,precision,recall
 
     def predict(self, red_fighter=None,blue_fighter=None) -> Dict[str,Any]:
         """
@@ -289,7 +295,7 @@ class Predictions():
             #out_fighters is a dataframe with all the averages of the to-be predicted fighters
 
             data.append(self.populate_dataframes(fighter_frame, blue_fighter,red_fighter, self.connection))
-            print(data)
+            ##print(data)
             out_fighters = pd.DataFrame(data,columns=self.columns)
             return out_fighters
 
