@@ -21,8 +21,8 @@ else:
 
 #User log
 userformatter = logging.Formatter('%(asctime)s %(message)s')
-app.logger= setup_logger('ufcwatch_api.log',userformatter, app.config['LOG_PATH'],level=logging.INFO)
-app.logger.setLevel(logging.DEBUG)
+app_logger= setup_logger('ufcwatch_api.log',userformatter, app.config['LOG_PATH'],level=logging.INFO)
+app_logger.setLevel(logging.DEBUG)
 
 app.debug = app.config['DEBUG']
 api=Api(app)
@@ -42,6 +42,7 @@ class PredictionsResource(Resource):
             with open(app.config['ROUTES']['basedir'] + '/pred_fights.json') as jf:
                 data = json.load(jf)
             return make_response(jsonify(data), 200)
+        app_logger.info(f"event_id: {event_id}")
 
         msg = []
         if not isinstance(event_id, int):
