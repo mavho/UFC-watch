@@ -22,7 +22,7 @@ importlib-resources==5.4.0
 isort==5.10.1
 itsdangerous==2.0.1
 Jinja2==3.0.3
-joblib==1.1.0
+joblib==1.2.0
 lazy-object-proxy==1.7.1
 lxml==4.7.1
 Mako==1.1.6
