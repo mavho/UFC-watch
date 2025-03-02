@@ -47,7 +47,7 @@ SQLAlchemy==1.4.29
 threadpoolctl==3.0.0
 toml==0.10.2
 typing_extensions==4.0.1
-Werkzeug==2.0.2
+Werkzeug==3.0.6
 wrapt==1.13.3
 yarl==1.7.2
 zipp==3.7.0
