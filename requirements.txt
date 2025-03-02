@@ -39,7 +39,7 @@ pylint==2.12.2
 python-dateutil==2.8.2
 pytz==2021.3
 -e git+ssh://git@github.com/mavho/Rotating-Proxy.git@e06744e54febbffbf8439f3036701f7edd5074df#egg=rotatingProxy
-scikit-learn==1.0.2
+scikit-learn==1.5.1
 scipy==1.7.3
 six==1.16.0
 soupsieve==2.3.1
