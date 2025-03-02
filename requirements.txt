@@ -50,4 +50,4 @@ typing_extensions==4.0.1
 Werkzeug==2.0.2
 wrapt==1.13.3
 yarl==1.7.2
-zipp==3.7.0
+zipp==3.19.1
