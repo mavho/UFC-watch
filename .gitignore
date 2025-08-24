@@ -10,3 +10,4 @@ trained_Kev.sav
 migrations/*
 */__pycache__/*
 *.code-workspace
+last_scraped_results.pickle

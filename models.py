@@ -1,4 +1,5 @@
 from ufc_api import db, ma
+
 #Event table
 class Events(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -26,22 +27,43 @@ class Bouts(db.Model):
     ###
     ###Striking Stats
     ###
+
+    # number of knock downs
     b_KD = db.Column(db.Integer)
     r_KD = db.Column(db.Integer)
-    b_SIGSTR = db.Column(db.String(12))
-    r_SIGSTR = db.Column(db.String(12))
-    b_SIGSTR_PRCT = db.Column(db.String(12))
-    r_SIGSTR_PRCT = db.Column(db.String(12))
-    b_TTLSTR = db.Column(db.String(12))
-    r_TTLSTR = db.Column(db.String(12))
-    b_TD= db.Column(db.Integer)
-    r_TD= db.Column(db.Integer)
-    b_TD_PRCT = db.Column(db.String(12))
-    r_TD_PRCT = db.Column(db.String(12))
+
+    ### significant strikes landed vs significant strikes attempted
+    # this is different than total strikes
+    b_LAND_SIGSTR = db.Column(db.Integer)
+    b_TTL_SIGSTR = db.Column(db.Integer)
+    r_LAND_SIGSTR = db.Column(db.Integer)
+    r_TTL_SIGSTR = db.Column(db.Integer)
+
+    ### total strikes landed vs total strikes total
+    ### note total strikes encompasses sig strikes
+    # so total strikes is it's own stat
+    b_TTL_STR = db.Column(db.Integer)
+    b_LAND_STR = db.Column(db.Integer)
+    r_TTL_STR = db.Column(db.Integer)
+    r_LAND_STR = db.Column(db.Integer)
+
+    ### takedowns landed vs takedowns total
+    b_LAND_TD = db.Column(db.Integer)
+    b_TTL_TD = db.Column(db.Integer)
+    r_LAND_TD = db.Column(db.Integer)
+    r_TTL_TD = db.Column(db.Integer)
+
+    ### sub attempts
     b_SUB= db.Column(db.Integer)
     r_SUB= db.Column(db.Integer)
-    b_PASS= db.Column(db.Integer)
-    r_PASS= db.Column(db.Integer)
+
+    ### number of reversals
+    b_REV= db.Column(db.Integer)
+    r_REV= db.Column(db.Integer)
+
+    ### control time in sec format
+    b_CNTRL_SEC = db.Column(db.Integer)
+    r_CNTRL_SEC = db.Column(db.Integer)
 
 class EventSchema(ma.SQLAlchemySchema):
     class Meta:

@@ -36,6 +36,18 @@ You can get the latest event predictions from the predictions endpoint
 /api/predictions
 ```
 
+### To Upgrade table schema
+
+If there are updates to the model, we use Flask-Alembic to upgrade the SQL database.
+Export out the `$FLASK_APP=ufc.api.py`.
+Run `flask db revision --autogenerate -m "Change comment"`
+Then review the script and apply them. Test out upgrade and down grade with
+`flask db upgrade` or `flask db downgrade`
+
+
+### Generating Proxy list
+
+
 ##### TODO's
 - prediction route with 2 fighters (started)
 - fighters endpoint

@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import random
 
 from dataclasses import dataclass 
 from typing import Set, Iterable, List, Tuple, Dict, Optional
@@ -18,16 +19,37 @@ class TaskQueueMessage:
     depth: int
     retry_count: int
 
+@dataclass
+class FighterStats:
+    """_summary_
+    fighter: fighter name
+    CNTRL_SEC: is control time in seconds
+    """
+    fighter:str
+    KD:int
+    SIGSTR_LAND:int
+    SIGSTR_TTL:int
+    TTLSTR_LAND:int
+    TTLSTR_TTL:int
+    TD_LAND:int
+    TD_TTL:int
+    SUB:int
+    REV:int
+    CNTRL_SEC:int
+    
+class RetryException(Exception):
+    pass
+
 class UFCWebScraper():
     """
     Web crawler dedicated to the ufc stats events page ;)
     """
-    def __init__(self, concurrency=20,start=0,end=None):
+    def __init__(self, concurrency=20,start=0,end=None,proxy_list:List[str]=None):
         """
-        concurrency (int) -> Int to specify how many workers.
-        Takes in plistfile, which is the location of the proxy_list.txt
+        concurrency (int) -> Int to specify how many workers.\n
+        Takes in listfile, which is the location of the proxy_list.txt
         """
-        self.r_proxy = RotatingProxy()
+        self.r_proxy = RotatingProxy(proxy_list=proxy_list)
 
         ### Base events URL that contains all UFC events.
         self.events_all_url = 'http://ufcstats.com/statistics/events/completed?page=all'
@@ -58,7 +80,7 @@ class UFCWebScraper():
         self.task_queue.put_nowait(task_message)
 
         print("Starting workers")
-        workers = [asyncio.create_task(self.worker()) for i in range(self.concurrency)]
+        workers = [asyncio.create_task(self.worker()) for _ in range(self.concurrency)]
 
         await self.task_queue.join()
 
@@ -92,6 +114,14 @@ class UFCWebScraper():
             ### crawl the page.
             try:
                 url,links,html,data = await self.crawl_page(task.url,task.depth)
+            except RetryException:
+                ### retry the task
+                if task.retry_count == 3:
+                    print("Task failed retry count")
+                else:
+                    task.retry_count += 1
+                    self.task_queue.put(task)
+
             except Exception as e:
                 print(traceback.format_exc())
                 print("Ran into Exception")
@@ -135,22 +165,35 @@ class UFCWebScraper():
         ### Depth 2 -> a Bouts page.
 
         if depth == 0:
+            await asyncio.sleep(random.randrange(0,3))
             html = await self.r_proxy._make_request(url)
+            if html is None:
+                raise RetryException(f'{url} failed, retry')
             ### links -> a set of all event URLs that need to be scrapped in depth 1.
             ### data -> List of general event information. dict(link,location,name,date)
             links, data = self.parse_all_events_page(html)
         elif depth == 1:
+            await asyncio.sleep(random.randrange(0,3))
             html = await self.r_proxy._make_request(url)
+            if html is None:
+                raise RetryException(f'{url} failed, retry')
             ### links -> a set of all BOUT URLs that need to be scrapped in depth 2
             ### data (dict) -> Data on all bouts that contain general bout info.
             ### Data is hashbed by the particular BOUT URL
             links, data = self.parse_event_page(html)
         elif depth == 2:
+            await asyncio.sleep(random.randrange(0,3))
             html = await self.r_proxy._make_request(url)
+
+            if html is None:
+                raise RetryException(f'{url} failed, retry')
             ### data -> Fight stastics on a particular bout
             try:
                 data = self._parse_striking_stats(html)
-            except Exception:
+            except Exception as e:
+                print(f"Unable to parse {url}")
+                print(e)
+                print(traceback.print_exc())
                 data = {}
             ### no more links to process.
             links = set()
@@ -253,47 +296,132 @@ class UFCWebScraper():
 
         return fight_details_url,fight_stats
 
-    def _parse_striking_stats(self, data:str) -> Dict:
+    def _parse_striking_stats(self, data:str) -> Dict[str,FighterStats]:
         """
-        Parses striking statistics. Populates two json's
+        Parses striking statistics from a data HTML
+
+        Returns a Dict with {
+            'Red': FighterStats,
+            'Blue': FighterStats
+        }
         """
         fight_stats = {}
-        red_stats = {}
-        blue_stats = {}
 
         soup = BeautifulSoup(data, 'lxml')
         table = soup.find('table')
         columns = table.find_all('td')
 
-        red_fighter = columns[0].contents[1].get_text(strip=True)
+        
+        try:
+            red_fighter = columns[0].contents[1].get_text(strip=True)
+        except IndexError as e:
+            print(traceback.print_exc())
+            print(len(columns))
+
         blue_fighter = columns[0].contents[3].get_text(strip=True)
 
-        red_stats['fighter'] = red_fighter 
-        blue_stats['fighter'] = blue_fighter        
+        # red_stats['fighter'] = red_fighter 
+        # blue_stats['fighter'] = blue_fighter        
 
-        red_stats['KD'] = columns[1].contents[1].get_text(strip=True)
-        blue_stats['KD'] = columns[1].contents[3].get_text(strip=True)
+        red_KD = columns[1].contents[1].get_text(strip=True)
+        blue_KD = columns[1].contents[3].get_text(strip=True)
+        # red_stats['KD'] = columns[1].contents[1].get_text(strip=True)
+        # blue_stats['KD'] = columns[1].contents[3].get_text(strip=True)
 
-        red_stats['SIGSTR'] = re.sub(' of ', '/', columns[2].contents[1].get_text(strip=True))
-        blue_stats['SIGSTR'] = re.sub(' of ', '/', columns[2].contents[3].get_text(strip=True))
+        ### parse sig str
+        ### the result of this is for example: 33 of 70
+        red_sig_str = columns[2].contents[1].get_text(strip=True)
+        red_sig_str_land, red_sig_str_total = red_sig_str.split('of',1)
 
-        red_stats['SIGSTR_PRCT'] = columns[3].contents[1].get_text(strip=True)
-        blue_stats['SIGSTR_PRCT'] = columns[3].contents[3].get_text(strip=True)
+        # red_stats['SIGSTR_LAND'] = red_sig_str_land
+        # red_stats['SIGSTR_TTL'] = red_sig_str_total
 
-        red_stats['TTLSTR'] = re.sub(' of ', '/', columns[4].contents[1].get_text(strip=True))
-        blue_stats['TTLSTR'] = re.sub(' of ', '/', columns[4].contents[3].get_text(strip=True))
+        blue_sig_str = columns[2].contents[3].get_text(strip=True)
+        blue_sig_str_land, blue_sig_str_total = blue_sig_str.split('of',1)
 
-        red_stats['TD'] = re.sub(' of ', '/', columns[5].contents[1].get_text(strip=True))
-        blue_stats['TD'] = re.sub(' of ', '/',columns[5].contents[3].get_text(strip=True))
+        # blue_stats['SIGSTR_LAND'] = blue_sig_str_land
+        # blue_stats['SIGSTR_TTL'] = blue_sig_str_total
 
-        red_stats['TD_PRCT'] = columns[6].contents[1].get_text(strip=True)
-        blue_stats['TD_PRCT'] = columns[6].contents[3].get_text(strip=True)
+        # red_stats['SIGSTR'] = re.sub(' of ', '/', columns[2].contents[1].get_text(strip=True))
+        # blue_stats['SIGSTR'] = re.sub(' of ', '/', columns[2].contents[3].get_text(strip=True))
 
-        red_stats['SUB'] = columns[7].contents[1].get_text(strip=True)
-        blue_stats['SUB'] = columns[7].contents[3].get_text(strip=True)
+        # deprecated
+        # red_stats['SIGSTR_PRCT'] = columns[3].contents[1].get_text(strip=True)
+        # blue_stats['SIGSTR_PRCT'] = columns[3].contents[3].get_text(strip=True)
 
-        red_stats['PASS'] = columns[8].contents[1].get_text(strip=True)
-        blue_stats['PASS'] = columns[8].contents[3].get_text(strip=True)
+        ### parsing total strikes
+        red_ttl_str = columns[4].contents[1].get_text(strip=True)
+        red_ttl_str_land, red_ttl_str_total = red_ttl_str.split('of',1)
+
+        # red_stats['TTLSTR_LAND'] = red_sig_str_land
+        # red_stats['TTLSTR_TTL'] = red_sig_str_total
+
+        blue_ttl_str = columns[4].contents[3].get_text(strip=True)
+        blue_ttl_str_land, blue_ttl_str_total = blue_ttl_str.split('of',1)
+
+        # blue_stats['TTLSTR_LAND'] = blue_sig_str_land
+        # blue_stats['TTLSTR_TTL'] = blue_sig_str_total
+
+        # red_stats['TTLSTR'] = re.sub(' of ', '/', columns[4].contents[1].get_text(strip=True))
+        # blue_stats['TTLSTR'] = re.sub(' of ', '/', columns[4].contents[3].get_text(strip=True))
+
+        red_td = columns[5].contents[1].get_text(strip=True)
+        red_td_land, red_td_total = red_td.split('of',1)
+
+        # red_stats['TD_LAND'] = red_td_land
+        # red_stats['TD_TTL'] = red_td_total
+
+        blue_td = columns[5].contents[3].get_text(strip=True)
+        blue_td_land, blue_td_total = blue_td.split('of',1)
+
+        # blue_stats['TD_LAND'] = blue_td_land
+        # blue_stats['TD_TTL'] = blue_td_total
+
+        # deprecated
+        # red_stats['TD_PRCT'] = columns[6].contents[1].get_text(strip=True)
+        # blue_stats['TD_PRCT'] = columns[6].contents[3].get_text(strip=True)
+
+        red_SUB = columns[7].contents[1].get_text(strip=True)
+        blue_SUB = columns[7].contents[3].get_text(strip=True)
+
+        red_REV = columns[8].contents[1].get_text(strip=True)
+        blue_REV = columns[8].contents[3].get_text(strip=True)
+
+        red_CNTRL = columns[9].contents[1].get_text(strip=True)
+        min,sec = red_CNTRL.split(":",1)
+        red_CNTRL = (int(min) * 60) + int(sec)
+
+        blue_CNTRL = columns[9].contents[3].get_text(strip=True)
+        min,sec = blue_CNTRL.split(":",1)
+        blue_CNTRL = (int(min) * 60) + int(sec)
+
+
+        red_stats = FighterStats(
+            fighter=red_fighter,
+            KD=red_KD,
+            SIGSTR_LAND=red_sig_str_land,
+            SIGSTR_TTL=red_sig_str_total,
+            TTLSTR_LAND=red_ttl_str_land,
+            TTLSTR_TTL=red_ttl_str_total,
+            TD_LAND=red_td_land,
+            TD_TTL=red_td_total,
+            SUB=red_SUB,
+            REV=red_REV,
+            CNTRL_SEC=red_CNTRL
+        )
+        blue_stats = FighterStats(
+            fighter=blue_fighter,
+            KD=blue_KD,
+            SIGSTR_LAND=blue_sig_str_land,
+            SIGSTR_TTL=blue_sig_str_total,
+            TTLSTR_LAND=blue_ttl_str_land,
+            TTLSTR_TTL=blue_ttl_str_total,
+            TD_LAND=blue_td_land,
+            TD_TTL=blue_td_total,
+            SUB=blue_SUB,
+            REV=blue_REV,
+            CNTRL_SEC=blue_CNTRL
+        )
 
         fight_stats['Red'] = red_stats
         fight_stats['Blue'] = blue_stats

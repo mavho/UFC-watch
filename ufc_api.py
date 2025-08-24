@@ -70,9 +70,9 @@ class PredictionsResource(Resource):
         return make_response(jsonify(data), 200)
 
 
-class EventResouce(Resource):
+class EventResource(Resource):
     """
-    Get a specfic event
+    Get a specific event
     """
     def get(self,event_id):
         msg = {}
@@ -125,7 +125,7 @@ class EventsResource(Resource):
         return make_response(jsonify(msg),error_code)
 
 api.add_resource(PredictionsResource,'/predictions','/predictions/<int:event_id>')
-api.add_resource(EventResouce,'/event/<int:event_id>')
+api.add_resource(EventResource,'/event/<int:event_id>')
 api.add_resource(EventsResource,'/events/<string:param>')
 
 

@@ -1,6 +1,8 @@
 import os
 import config_helpers
+
 basedir = os.path.abspath(os.path.dirname(__file__))
+
 class Config(object):
     """
     Universal Config, stuff here should work for development and production!
