@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup
 import random
+import pickle
+import time
 
 from dataclasses import dataclass 
 from typing import Set, Iterable, List, Tuple, Dict, Optional
@@ -44,6 +46,7 @@ class UFCWebScraper():
     """
     Web crawler dedicated to the ufc stats events page ;)
     """
+    pickled_queue_file = "scrape_q.pickle"
     def __init__(self, concurrency=20,start=0,end=None,proxy_list:List[str]=None):
         """
         concurrency (int) -> Int to specify how many workers.\n
@@ -65,20 +68,40 @@ class UFCWebScraper():
         ### Result Dictionary.
         self.results = {}
 
+        self.loop=None
+        self.task_queue :asyncio.Queue[TaskQueueMessage] = asyncio.Queue()
+
+    def pickle_queue(self):
+        """_summary_
+        Saves the current task queue into a pickle file as a list.
+        
+        This queue can be used to replay the past parsed url's.
+        """
+
+        print(f"Saving task queue with {self.task_queue.qsize()} items into {self.pickled_queue_file}")
+        with open(self.pickled_queue_file,'wb+') as f:
+
+            q_list = []
+            while self.task_queue:
+                task = self.task_queue.get_nowait()
+                q_list.append(task)
+            pickle.dump(q_list,f)
+    def load_queue(self):
+        """_summary_
+        Loads the pickled file into a queue.
+        
+        This queue can be used to replay the past parsed url's.
+        """
+        with open(self.pickled_queue_file,'rb') as f:
+
+            q_list = pickle.load(f)
+            for task in q_list:
+                self.task_queue.put_nowait(task)
  
     async def crawl(self) -> None:
         """
         Starts concurrent workers, and starts scrapping.
         """
-
-        self.task_queue = asyncio.Queue()
-
-        ### initial message.
-        task_message = TaskQueueMessage(self.events_all_url,'', 0, 0)
-
-        ### put it into the Q.
-        self.task_queue.put_nowait(task_message)
-
         print("Starting workers")
         workers = [asyncio.create_task(self.worker()) for _ in range(self.concurrency)]
 
@@ -120,7 +143,7 @@ class UFCWebScraper():
                     print("Task failed retry count")
                 else:
                     task.retry_count += 1
-                    self.task_queue.put(task)
+                    await self.task_queue.put(task)
 
             except Exception as e:
                 print(traceback.format_exc())
@@ -164,32 +187,64 @@ class UFCWebScraper():
         ### Depth 1 -> An events page with all the bouts.
         ### Depth 2 -> a Bouts page.
 
+        print(url,depth)
+
+
+        if not self.loop:
+            self.loop = asyncio.get_event_loop()
+
         if depth == 0:
             await asyncio.sleep(random.randrange(0,3))
+            t = time.perf_counter()
             html = await self.r_proxy._make_request(url)
+            print(f"Req done at {time.perf_counter() - t}")
             if html is None:
                 raise RetryException(f'{url} failed, retry')
             ### links -> a set of all event URLs that need to be scrapped in depth 1.
             ### data -> List of general event information. dict(link,location,name,date)
-            links, data = self.parse_all_events_page(html)
+            # links, data = self.parse_all_events_page(html)
+
+            # links, data = await asyncio.to_thread(self.parse_all_events_page(html))
+            links, data = await self.loop.run_in_executor(
+                None,
+                self.parse_all_events_page,
+                html
+            )
         elif depth == 1:
             await asyncio.sleep(random.randrange(0,3))
+            # html = await self.r_proxy._make_request(url)
+            t = time.perf_counter()
             html = await self.r_proxy._make_request(url)
+            print(f"Req done at {time.perf_counter() - t}")
             if html is None:
                 raise RetryException(f'{url} failed, retry')
             ### links -> a set of all BOUT URLs that need to be scrapped in depth 2
             ### data (dict) -> Data on all bouts that contain general bout info.
             ### Data is hashbed by the particular BOUT URL
-            links, data = self.parse_event_page(html)
+            # links, data = self.parse_event_page(html)
+            # links, data = await asyncio.to_thread(self.parse_event_page(html))
+            links, data = await self.loop.run_in_executor(
+                None,
+                self.parse_event_page,
+                html
+            )
         elif depth == 2:
             await asyncio.sleep(random.randrange(0,3))
+            # html = await self.r_proxy._make_request(url)
+            t = time.perf_counter()
             html = await self.r_proxy._make_request(url)
+            print(f"Req done at {time.perf_counter() - t}")
 
             if html is None:
                 raise RetryException(f'{url} failed, retry')
             ### data -> Fight stastics on a particular bout
             try:
-                data = self._parse_striking_stats(html)
+                # data = self._parse_striking_stats(html)
+                 data = await self.loop.run_in_executor(
+                    None,
+                    self._parse_striking_stats,
+                    html
+                )
             except Exception as e:
                 print(f"Unable to parse {url}")
                 print(e)
@@ -210,6 +265,8 @@ class UFCWebScraper():
 
         generates a URL set of all the events and all their urls
         """
+        if isinstance(data,bytes):
+            data = data.decode()
         soup = BeautifulSoup(data,'lxml') 
         payload = soup.find('table', {'class', 'b-statistics__table-events'})
         payload = payload.find_all('tr')
@@ -245,6 +302,8 @@ class UFCWebScraper():
         
         Create a listing of all fights.
         """
+        if isinstance(data,bytes):
+            data = data.decode()
         soup = BeautifulSoup(data, 'lxml')
         payload = soup.find('tbody', {'class', 'b-fight-details__table-body'})
 
@@ -305,20 +364,25 @@ class UFCWebScraper():
             'Blue': FighterStats
         }
         """
+        if isinstance(data,bytes):
+            data = data.decode()
         fight_stats = {}
 
         soup = BeautifulSoup(data, 'lxml')
         table = soup.find('table')
         columns = table.find_all('td')
-
         
         try:
             red_fighter = columns[0].contents[1].get_text(strip=True)
         except IndexError as e:
             print(traceback.print_exc())
-            print(len(columns))
+            # print(f"Columns: {columns}")
 
-        blue_fighter = columns[0].contents[3].get_text(strip=True)
+        try:
+            blue_fighter = columns[0].contents[3].get_text(strip=True)
+        except IndexError as e:
+            print(traceback.print_exc())
+            # print(f"Columns: {columns}")
 
         # red_stats['fighter'] = red_fighter 
         # blue_stats['fighter'] = blue_fighter        
@@ -388,12 +452,23 @@ class UFCWebScraper():
         blue_REV = columns[8].contents[3].get_text(strip=True)
 
         red_CNTRL = columns[9].contents[1].get_text(strip=True)
-        min,sec = red_CNTRL.split(":",1)
-        red_CNTRL = (int(min) * 60) + int(sec)
+
+        ### older fights do not have control, and sometimes opt for '--'
+        ### we count those as 0 seconds
+        try:
+            min,sec = red_CNTRL.split(":",1)
+        except ValueError as e:
+            red_CNTRL = 0
+        else:
+            red_CNTRL = (int(min) * 60) + int(sec)
 
         blue_CNTRL = columns[9].contents[3].get_text(strip=True)
-        min,sec = blue_CNTRL.split(":",1)
-        blue_CNTRL = (int(min) * 60) + int(sec)
+        try:
+            min,sec = blue_CNTRL.split(":",1)
+        except ValueError:
+            blue_CNTRL = 0
+        else:
+            blue_CNTRL = (int(min) * 60) + int(sec)
 
 
         red_stats = FighterStats(
@@ -449,9 +524,9 @@ class UFCWebScraper():
 
         return fight_list
     
-    async def get_results(self,start,end=None) -> List:
+    async def get_results(self,start,end=None,loop:asyncio.AbstractEventLoop=None) -> List:
         """
-        Crawl from start -> end.
+        Crawl from start -> end from the events_all_url.
         
         If you want the most recent bout information, start=2, end = 3
 
@@ -466,8 +541,13 @@ class UFCWebScraper():
         Returns:
             List: [description]
         """
-        self.results = {}
-        self.crawled_urls = set()
+        ### set the event loop if passed in
+        self.loop = loop
+
+        ### initial message.
+        task_message = TaskQueueMessage(self.events_all_url,'', 0, 0)
+        ### put it into the Q.
+        self.task_queue.put_nowait(task_message)
 
         self.start = start + 1
         if end is not None:

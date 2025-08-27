@@ -47,6 +47,14 @@ Then review the script and apply them. Test out upgrade and down grade with
 
 ### Generating Proxy list
 
+Clone `https://github.com/proxifly/free-proxy-list.git` with the depth=1 option
+
+Periodically need to update the proxy list to pull from master.
+
+We can get the values from `free-proxy-list/proxies/protocols/http/data.txt` and sanitize it for our use. Our script doesn't use http:// prefix.
+
+
+
 
 ##### TODO's
 - prediction route with 2 fighters (started)

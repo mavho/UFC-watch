@@ -2,6 +2,7 @@
 #Then we run the predictions module to write the predictions out.
 
 import asyncio
+import sys
 import os
 import json
 from config import Config
@@ -18,10 +19,11 @@ LAST_SCRAPE_RESULTS_PICKLE = 'last_scaped_results.pickle'
 
 def main(args:Namespace):
 
-    if args.replay:
+    if args.replay == 'results':
+
         with open(LAST_SCRAPE_RESULTS_PICKLE,'rb') as f:
-            # pickle.dump(latest_event,LAST_SCRAPE_RESULTS_PICKLE)
-            latest_event = pickle.load(f)
+            events_data = pickle.load(f)
+            
     else:
         ### load in the proxy list
         proxy_list = []
@@ -31,17 +33,41 @@ def main(args:Namespace):
                 proxy_list.append(line.strip())
                 
         ### Get the latest UFC event (that just finished) and add it to the DB.
-        scraper = UFCWebScraper(proxy_list=proxy_list)
+        scraper = UFCWebScraper(concurrency=args.conc,proxy_list=proxy_list)
 
         loop = asyncio.get_event_loop()
 
-        latest_event = loop.run_until_complete(
-            scraper.get_results(start=args.start,end=args.end)
-        )
+
+        ### we want to load the queue, so we don't need to load from get_results.
+        # can just crawl
+        if args.replay == 'queue':
+            scraper.load_queue()
+
+            loop.run_until_complete(
+                scraper.crawl()
+            )
+            events_data = scraper.results
+
+        ### replay isn't specified so it's parsing from the root page
+        # the root page is run from get_results
+        else:
+            if args.all:
+                args.start = 2
+
+            try:
+                events_data = loop.run_until_complete(
+                    scraper.get_results(start=args.start,end=args.end,loop=loop)
+                )
+            except KeyboardInterrupt as e:
+                print("Keyboard is interrupted!!")
+
+                scraper.pickle_queue()
+                sys.exit(0)
+        
 
         print("Finished latest event")
         with open(LAST_SCRAPE_RESULTS_PICKLE,'wb+') as f:
-            pickle.dump(latest_event,f)
+            pickle.dump(events_data,f)
 
 
         if args.bouts:
@@ -58,10 +84,8 @@ def main(args:Namespace):
 
     if args.write:
         print("Writing results to SQL table")
-        dh.populate_bouts_fighters_table(latest_event)
+        dh.populate_bouts_fighters_table(events_data)
     
-
-
     if args.predict:
         db_engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
         ### Predict new boutlist.
@@ -77,6 +101,11 @@ if __name__ == '__main__':
 
     args = ArgumentParser()
 
+    args.add_argument(
+        '--all',
+        action='store_true',
+        help="Scraps all events that have already happened"
+    )
     
     args.add_argument(
         '-s','--start',
@@ -91,9 +120,18 @@ if __name__ == '__main__':
     )
 
     args.add_argument(
+        '-c','--conc',
+        type=int,
+        default=20,
+        help="Adjust concurrency of workers."
+    )
+
+    args.add_argument(
         '--replay',
-        action='store_true',
-        help="Uses the last scrape results to insert into the DB"
+        choices=['queue','results'],
+        help="Continue from where the previous run left off. You can specify\
+            queue to replay a run that previous ended during the scrape phase.\
+            You can also specify results to fetch the last scrapped run's results"
     )
 
     args.add_argument(
