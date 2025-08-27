@@ -53,6 +53,10 @@ Periodically need to update the proxy list to pull from master.
 
 We can get the values from `free-proxy-list/proxies/protocols/http/data.txt` and sanitize it for our use. Our script doesn't use http:// prefix.
 
+### Python Version
+Using Python 3.8.10
+Downloaded via pyenv
+
 
 
 
