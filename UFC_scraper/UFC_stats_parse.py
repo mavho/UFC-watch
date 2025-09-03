@@ -47,6 +47,7 @@ class UFCWebScraper():
     Web crawler dedicated to the ufc stats events page ;)
     """
     pickled_queue_file = "scrape_q.pickle"
+    pickled_failed_tasks = "failed_tasks.pickle"
     def __init__(self, concurrency=20,start=0,end=None,proxy_list:List[str]=None):
         """
         concurrency (int) -> Int to specify how many workers.\n
@@ -68,6 +69,8 @@ class UFCWebScraper():
         ### Result Dictionary.
         self.results = {}
 
+        self.failed_urls = []
+
         self.loop=None
         self.task_queue :asyncio.Queue[TaskQueueMessage] = asyncio.Queue()
 
@@ -83,9 +86,28 @@ class UFCWebScraper():
 
             q_list = []
             while self.task_queue:
-                task = self.task_queue.get_nowait()
+                try:
+                    task = self.task_queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
                 q_list.append(task)
             pickle.dump(q_list,f)
+
+    def pickle_failed_tasks(self):
+        """_summary_
+        Saves the current task queue into a pickle file as a list.
+        
+        This queue can be used to replay the past parsed url's.
+        """
+
+        print(f"Saving failed tasks with {len(self.failed_urls)} items into {self.pickled_failed_tasks}")
+        with open(self.pickled_failed_tasks,'wb+') as f:
+
+            q_list = []
+            for task in self.failed_urls:
+                q_list.append(task)
+            pickle.dump(q_list,f)
+
     def load_queue(self):
         """_summary_
         Loads the pickled file into a queue.
@@ -105,14 +127,17 @@ class UFCWebScraper():
         print("Starting workers")
         workers = [asyncio.create_task(self.worker()) for _ in range(self.concurrency)]
 
-        await self.task_queue.join()
+        try:
+            await self.task_queue.join()
 
-        for w in workers:
-            w.cancel()
-        print("Finished")
-            
-        if self.r_proxy.session:
-            await self.r_proxy.session.close()
+            for w in workers:
+                w.cancel()
+            print("Finished")
+        finally:
+            if self.r_proxy.session:
+                await self.r_proxy.session.close()
+
+            self.pickle_failed_tasks()
 
     async def worker(self) -> None:
         """
@@ -139,8 +164,9 @@ class UFCWebScraper():
                 url,links,html,data = await self.crawl_page(task.url,task.depth)
             except RetryException:
                 ### retry the task
-                if task.retry_count == 3:
+                if task.retry_count == 10:
                     print("Task failed retry count")
+                    self.failed_urls.append(task)
                 else:
                     task.retry_count += 1
                     await self.task_queue.put(task)
@@ -148,6 +174,7 @@ class UFCWebScraper():
             except Exception as e:
                 print(traceback.format_exc())
                 print("Ran into Exception")
+                self.failed_urls.append(task)
             else:
                 ### update results based on depth.
                 ### results will be hashed by links
@@ -229,7 +256,7 @@ class UFCWebScraper():
                 html
             )
         elif depth == 2:
-            await asyncio.sleep(random.randrange(0,3))
+            await asyncio.sleep(random.randrange(0,5))
             # html = await self.r_proxy._make_request(url)
             t = time.perf_counter()
             html = await self.r_proxy._make_request(url)
@@ -238,19 +265,12 @@ class UFCWebScraper():
             if html is None:
                 raise RetryException(f'{url} failed, retry')
             ### data -> Fight stastics on a particular bout
-            try:
-                # data = self._parse_striking_stats(html)
-                 data = await self.loop.run_in_executor(
-                    None,
-                    self._parse_striking_stats,
-                    html
-                )
-            except Exception as e:
-                print(f"Unable to parse {url}")
-                print(e)
-                print(traceback.print_exc())
-                data = {}
-            ### no more links to process.
+
+            data = await self.loop.run_in_executor(
+                None,
+                self._parse_striking_stats,
+                html
+            )
             links = set()
         else:
             html = ''

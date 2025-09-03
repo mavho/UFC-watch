@@ -32,13 +32,11 @@ marshmallow-sqlalchemy>=0.27.0
 mccabe>=0.6.1
 multidict>=5.2.0
 numpy>=1.22.1
-pandas>=1.4.0
-pkg_resources>=0.0.0
+pandas
 platformdirs>=2.4.1
 pylint>=2.12.2
 python-dateutil>=2.8.2
 pytz>=2021.3
--e git+ssh://git@github.com/mavho/Rotating-Proxy.git@e06744e54febbffbf8439f3036701f7edd5074df#egg>rotatingProxy
 scikit-learn>=1.0.2
 scipy>=1.7.3
 six>=1.16.0

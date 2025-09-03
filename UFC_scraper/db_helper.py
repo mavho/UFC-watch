@@ -15,14 +15,15 @@ def populate_bouts_fighters_table(event_data):
 
     with app.app_context():
         for link,event in event_data.items():
-            bouts:Dict[str,Dict[str,FighterStats]] = event['bouts']
+
             event_name = event['name']
             date = event['date']
             location = event['location']
 
-            for link,bout in bouts.items():
-                print(link)
-                print(bout)
+
+            # for link,bout in bouts.items():
+            #     print(link)
+            #     print(bout)
 
             ### See if this event is in the DB.
             event_q = Events.query.filter_by(event=event_name).first()
@@ -41,6 +42,14 @@ def populate_bouts_fighters_table(event_data):
                     return
                 else:
                     print(f"event: {event_name} already exists, but has no bouts.")
+
+            if 'bouts' not in event:
+                print(f"No bouts recorded for {event_name}")
+                continue
+            else:
+                print(f"Bouts recorded for {event_name}")
+            
+            bouts:Dict[str,Dict[str,FighterStats]] = event['bouts']
 
             for link,bout in bouts.items():
                 try:
