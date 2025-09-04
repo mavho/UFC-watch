@@ -119,7 +119,7 @@ class EventsResource(Resource):
             for event in event_rows:
                 msg['events'].append(event_schema.dump(event))
         else:
-            msg['Error'] = "Invalid url, param needs to be all or existing."
+            msg['Error'] = "Invalid url, param needs to be all"
             error_code = 400
             
         return make_response(jsonify(msg),error_code)

@@ -65,6 +65,7 @@ class Bouts(db.Model):
     b_CNTRL_SEC = db.Column(db.Integer)
     r_CNTRL_SEC = db.Column(db.Integer)
 
+
 class EventSchema(ma.SQLAlchemySchema):
     class Meta:
         model = Events
@@ -91,28 +92,32 @@ class BoutSchema(ma.SQLAlchemySchema):
     red_stats = ma.Method("ser_rfighter")
 
     ### parse Bout fighter stats into a dict
-    def ser_bfighter(self,obj):
+    def ser_bfighter(self,obj:Bouts):
         stats = dict()
 
         stats["KD"] = obj.b_KD
-        stats["SIGSTR"] = obj.b_SIGSTR
-        stats["SIGSTR_PRCT"] = obj.b_SIGSTR_PRCT
-        stats["TTLSTR"] = obj.b_TTLSTR
-        stats["TD"] = obj.b_TD
-        stats["TD_PRCT"] = obj.b_TD_PRCT
+        stats["LAND_SIGSTR"] = obj.b_LAND_SIGSTR
+        stats["TTL_SIGSTR"] = obj.b_TTL_SIGSTR
+        stats["LAND_STR"] = obj.b_LAND_STR
+        stats["TTL_STR"] = obj.b_TTL_STR
+        stats["LAND_TD"] = obj.b_LAND_TD
+        stats["TTL_TD"] = obj.b_TTL_TD
         stats["SUB"] = obj.b_SUB
-        stats["PASS"] = obj.b_PASS
+        stats["REV"] = obj.b_REV
+        stats['CNTRL_SEC'] = obj.b_CNTRL_SEC
         return stats
 
-    def ser_rfighter(self,obj):
+    def ser_rfighter(self,obj:Bouts):
         stats = dict()
 
         stats["KD"] = obj.r_KD
-        stats["SIGSTR"] = obj.r_SIGSTR
-        stats["SIGSTR_PRCT"] = obj.r_SIGSTR_PRCT
-        stats["TTLSTR"] = obj.r_TTLSTR
-        stats["TD"] = obj.r_TD
-        stats["TD_PRCT"] = obj.r_TD_PRCT
+        stats["LAND_SIGSTR"] = obj.r_LAND_SIGSTR
+        stats["TTL_SIGSTR"] = obj.r_TTL_SIGSTR
+        stats["LAND_STR"] = obj.r_LAND_STR
+        stats["TTL_STR"] = obj.r_TTL_STR
+        stats["LAND_TD"] = obj.r_LAND_TD
+        stats["TTL_TD"] = obj.r_TTL_TD
         stats["SUB"] = obj.r_SUB
-        stats["PASS"] = obj.r_PASS
+        stats["REV"] = obj.r_REV
+        stats['CNTRL_SEC'] = obj.r_CNTRL_SEC
         return stats

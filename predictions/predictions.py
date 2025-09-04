@@ -28,10 +28,48 @@ class Predictions():
         #db i'm accessing
         self.db_engine = db_engine
         self.connection = self.db_engine.connect()
-        self.columns = ['blue_fighter','b_KD', 'b_PASS', 'b_SIGSTR', 'b_SIGSTR_PRCT', 'b_SUB', 'b_TD', 'b_TD_PRCT','b_TTLSTR', 'b_TTLSTR_PRCT'
-                ,'red_fighter','r_KD', 'r_PASS', 'r_SIGSTR', 'r_SIGSTR_PRCT', 'r_SUB', 'r_TD', 'r_TD_PRCT', 'r_TTLSTR', 'r_TTLSTR_PRCT']
-        self.feature_col = ['b_KD', 'b_PASS', 'b_SIGSTR', 'b_SIGSTR_PRCT', 'b_SUB', 'b_TD', 'b_TD_PRCT', 'b_TTLSTR', 'b_TTLSTR_PRCT',
-                'r_KD', 'r_PASS', 'r_SIGSTR', 'r_SIGSTR_PRCT', 'r_SUB', 'r_TD', 'r_TD_PRCT', 'r_TTLSTR', 'r_TTLSTR_PRCT']
+        self.columns = [
+            'blue_fighter',
+            'b_KD',
+            'b_REV',
+            'b_LAND_SIGSTR',
+            'b_TTL_SIGSTR',
+            'b_SUB',
+            'b_LAND_TD',
+            'b_TTL_TD',
+            'b_TTL_STR',
+            'b_LAND_STR',
+            'b_CNTRL_SEC',
+            'red_fighter',
+            'r_KD',
+            'r_REV',
+            'r_LAND_SIGSTR',
+            'r_TTL_SIGSTR',
+            'r_SUB',
+            'r_LAND_TD',
+            'r_TTL_TD',
+            'r_TTL_STR',
+            'r_LAND_STR',
+            'r_CNTRL_SEC',
+        ]
+        self.feature_col = [
+            'b_KD',
+            'b_REV',
+            'b_LAND_SIGSTR',
+            'b_TTL_SIGSTR',
+            'b_SUB',
+            'b_LAND_TD',
+            'b_LAND_STR',
+            'b_CNTRL_SEC',
+            'r_KD',
+            'r_REV',
+            'r_LAND_SIGSTR',
+            'r_TTL_SIGSTR',
+            'r_SUB',
+            'r_LAND_TD',
+            'r_LAND_STR',
+            'r_CNTRL_SEC',
+        ]
 
     def p2f(self,s:str) -> float:
         """
@@ -51,13 +89,15 @@ class Predictions():
         """
         Converts values from the data_frame into ints for numpy and sklearn to use it in predictions.
 
-        If both of the fighter's names are specified, it computes the average for those figthers and returns a playload. 
+        If both of the fighter's names are specified, it computes the average for those fighters and returns a payload. 
         If the both names are '' then it won't return anything. 
         """
         #blue fighter, red fighter
         #vars to calculate avgs of respective fighters
-        avg_rsigstr = avg_rsigstr_prct = avg_rTD_prct = avg_rTD = avg_rKD = avg_rpass = avg_rsub = avg_rttlstr = avg_rttlstr_prct = 0 
-        avg_bsigstr = avg_bsigstr_prct = avg_bTD_prct = avg_bTD = avg_bKD = avg_bpass = avg_bsub = avg_bttlstr = avg_bttlstr_prct = 0 
+        avg_rsigstr_land = avg_rsigstr_ttl = avg_rTD_land = avg_rTD_ttl = avg_rKD = avg_rrev = avg_rsub = avg_rstr_land = avg_rstr_ttl = 0 
+        avg_bsigstr_land = avg_bsigstr_ttl = avg_bTD_land = avg_bTD_ttl = avg_bKD = avg_brev = avg_bsub = avg_bstr_land = avg_bstr_ttl = 0 
+        avg_rcntrl_sec = 0
+        avg_bcntrl_sec = 0
         #count how many fights each fighter had
         red_cnt = 0
         blue_cnt = 0
@@ -73,110 +113,150 @@ class Predictions():
                 data_frame.at[index, 'b_win']= 0
                 data_frame.at[index, 'r_win']= 0
 
-            #local vars for the loop, don't wanna calculate every time
-            TD=0
-            try:
-                TD = int(rows['r_TD'].split('/')[1])
-            except (ValueError, IndexError):
-                TD = int(rows['r_TD'].split('of')[1])
+            data_frame.at[index,'r_LAND_STR']=rows['r_LAND_STR']
+            data_frame.at[index,'r_TTL_STR']=rows['r_TTL_STR']
+            data_frame.at[index,'r_LAND_SIGSTR']=rows['r_LAND_SIGSTR']
+            data_frame.at[index,'r_TTL_SIGSTR']=rows['r_TTL_SIGSTR']
+            data_frame.at[index,'r_LAND_TD']=rows['r_LAND_TD']
+            data_frame.at[index,'r_TTL_LAND']=rows['r_TTL_TD']
+            data_frame.at[index,'r_CNTRL_SEC']=rows['r_CNTRL_SEC']
 
-            TD_PRCT = self.p2f(rows['r_TD_PRCT'])
-            TTLSTR = int(rows['r_TTLSTR'].split('/')[1])
-            try:
-                TTLSTR_PRCT = float(int(rows['r_TTLSTR'].split('/')[0])/int(rows['r_TTLSTR'].split('/')[1]))
-            except ZeroDivisionError:
-                TTLSTR_PRCT = float(0)
-            SIGSTR = int(rows['r_SIGSTR'].split('/')[1])
-            SIGSTR_PRCT = self.p2f(rows['r_SIGSTR_PRCT'])
-
-            data_frame.at[index,'r_TD']=TD
-            data_frame.at[index,'r_TTLSTR']=TTLSTR
-            data_frame.at[index,'r_TTLSTR_PRCT']=TTLSTR_PRCT
-            data_frame.at[index,'r_SIGSTR']=SIGSTR
-            data_frame.at[index,'r_SIGSTR_PRCT']=SIGSTR_PRCT
-            data_frame.at[index,'r_TD_PRCT']=TD_PRCT
-
+            ### if red fighter was red fighter in this fight, add up the red stats
             if rows['red_fighter'] == red_fighter:
-                avg_rTD += TD
-                avg_rsigstr += SIGSTR
-                avg_rsigstr_prct += SIGSTR_PRCT
-                avg_rTD_prct += TD_PRCT 
+                avg_rTD_land += rows['r_LAND_TD']
+                avg_rTD_ttl += rows['r_TTL_TD']
+
+                avg_rsigstr_land += rows['r_LAND_SIGSTR']
+
+                avg_rsigstr_ttl += rows['r_TTL_SIGSTR']
+
+                avg_rstr_land+= rows['r_LAND_STR']
+
+                avg_rstr_ttl += rows['r_TTL_STR']
+
                 avg_rKD += rows['r_KD']
-                avg_rpass += rows['r_PASS']
+                avg_rrev += rows['r_REV']
                 avg_rsub += rows['r_SUB']
-                avg_rttlstr += TTLSTR  
-                avg_rttlstr_prct +=TTLSTR_PRCT
+                avg_rcntrl_sec += rows['r_CNTRL_SEC']
                 red_cnt +=1
 
-            if rows['red_fighter'] == blue_fighter:
-                avg_bTD += TD
-                avg_bsigstr += SIGSTR
-                avg_bsigstr_prct += SIGSTR_PRCT
-                avg_bTD_prct += TD_PRCT 
-                avg_bKD += rows['b_KD']
-                avg_bpass += rows['b_PASS']
-                avg_bsub += rows['b_SUB']
-                avg_bttlstr += TTLSTR  
-                avg_bttlstr_prct += TTLSTR_PRCT
+            ### if red fighter was blue fighter in this fight, add up the blue stats
+            if rows['blue_fighter'] == red_fighter:
+                avg_rTD_land += rows['b_LAND_TD']
+                avg_rTD_ttl += rows['b_TTL_TD']
+
+                avg_rsigstr_land += rows['b_LAND_SIGSTR']
+
+                avg_rsigstr_ttl += rows['b_TTL_SIGSTR']
+
+                avg_rstr_land+= rows['b_LAND_STR']
+
+                avg_rstr_ttl += rows['b_TTL_STR']
+
+                avg_rKD += rows['b_KD']
+                avg_rrev += rows['b_REV']
+                avg_rsub += rows['b_SUB']
+                avg_rcntrl_sec += rows['b_CNTRL_SEC']
+
                 blue_cnt+=1
 
                 #################Blue side#################################################    
-            TD=0
-            try:
-                TD = int(rows['b_TD'].split('/')[1])
-            except (ValueError, IndexError):
-                TD = int(rows['b_TD'].split('of')[1])
-            TD_PRCT = self.p2f(rows['b_TD_PRCT'])
-            TTLSTR = int(rows['b_TTLSTR'].split('/')[1])
-            try:
-                TTLSTR_PRCT = float(int(rows['b_TTLSTR'].split('/')[0])/int(rows['b_TTLSTR'].split('/')[1]))
-            except (ZeroDivisionError):
-                TTLSTR_PRCT = float(0)
-            SIGSTR = int(rows['b_SIGSTR'].split('/')[1])
-            SIGSTR_PRCT = self.p2f(rows['b_SIGSTR_PRCT'])
 
-            data_frame.at[index,'b_TD'] = TD
-            data_frame.at[index,'b_TTLSTR'] = TTLSTR
-            data_frame.at[index,'b_TTLSTR_PRCT']=TTLSTR_PRCT
-            data_frame.at[index,'b_SIGSTR']=SIGSTR
-            data_frame.at[index,'b_SIGSTR_PRCT']=SIGSTR_PRCT
-            data_frame.at[index,'b_TD_PRCT']=TD_PRCT
+            data_frame.at[index,'b_LAND_STR']=rows['b_LAND_STR']
+            data_frame.at[index,'b_TTL_STR']=rows['b_TTL_STR']
+            data_frame.at[index,'b_LAND_SIGSTR']=rows['b_LAND_SIGSTR']
+            data_frame.at[index,'b_TTL_SIGSTR']=rows['b_TTL_SIGSTR']
+            data_frame.at[index,'b_LAND_TD']=rows['b_LAND_TD']
+            data_frame.at[index,'b_TTL_LAND']=rows['b_TTL_TD']
+            data_frame.at[index,'b_CNTRL_SEC']=rows['b_CNTRL_SEC']
 
-            #correspond fighter's info throughout different dataframes
             if rows['blue_fighter'] == blue_fighter:
-                avg_bTD += TD
-                avg_bsigstr += SIGSTR
-                avg_bsigstr_prct += SIGSTR_PRCT
-                avg_bTD_prct += TD_PRCT 
+                avg_bTD_land += rows['b_LAND_TD']
+                avg_bTD_ttl += rows['b_TTL_TD']
+
+                avg_bsigstr_land += rows['b_LAND_SIGSTR']
+
+                avg_bsigstr_ttl += rows['b_TTL_SIGSTR']
+
+                avg_bstr_land+= rows['b_LAND_STR']
+
+                avg_bstr_ttl += rows['b_TTL_STR']
+
                 avg_bKD += rows['b_KD']
-                avg_bpass += rows['b_PASS']
+                avg_brev += rows['b_REV']
                 avg_bsub += rows['b_SUB']
-                avg_bttlstr += TTLSTR  
-                avg_bttlstr_prct += TTLSTR_PRCT
+                avg_bcntrl_sec += rows['b_CNTRL_SEC']
+                blue_cnt +=1
+
+            if rows['red_fighter'] == blue_fighter:
+                avg_bTD_land += rows['r_LAND_TD']
+                avg_bTD_ttl += rows['r_TTL_TD']
+
+                avg_bsigstr_land += rows['r_LAND_SIGSTR']
+
+                avg_bsigstr_ttl += rows['r_TTL_SIGSTR']
+
+                avg_bstr_land+= rows['r_LAND_STR']
+
+                avg_bstr_ttl += rows['r_TTL_STR']
+
+                avg_bKD += rows['r_KD']
+                avg_brev += rows['r_REV']
+                avg_bsub += rows['r_SUB']
+                avg_bcntrl_sec += rows['r_CNTRL_SEC']
                 blue_cnt+=1
-            if rows['blue_fighter'] == red_fighter:
-                avg_rTD += TD
-                avg_rsigstr += SIGSTR
-                avg_rsigstr_prct += SIGSTR_PRCT
-                avg_rTD_prct += TD_PRCT 
-                avg_rKD += rows['r_KD']
-                avg_rpass += rows['r_PASS']
-                avg_rsub += rows['r_SUB']
-                avg_rttlstr += TTLSTR  
-                avg_rttlstr_prct += TTLSTR_PRCT
-                red_cnt +=1
 
         if(blue_fighter == '' and red_fighter == ''):
             return {}
+
+            # 'blue_fighter',
+            # 'b_KD',
+            # 'b_REV',
+            # 'b_LAND_SIGSTR',
+            # 'b_TTL_SIGSTR',
+            # 'b_SUB',
+            # 'b_LAND_TD',
+            # 'b_TTL_STR',
+            # 'b_LAND_STR',
+            # 'b_CNTRL_SEC',
+            # 'red_fighter',
+            # 'r_KD',
+            # 'r_REV',
+            # 'r_LAND_SIGSTR',
+            # 'r_TTL_SIG_STR',
+            # 'r_SUB',
+            # 'r_LAND_TD',
+            # 'r_TTL_STR',
+            # 'r_LAND_STR',
+            # 'r_CNTRL_SEC',
         else:
-            return {'blue_fighter':blue_fighter,'b_KD':self.weird_div(avg_bKD,blue_cnt), 'b_PASS':self.weird_div(avg_bpass,blue_cnt),
-                'b_SIGSTR':self.weird_div(avg_bsigstr,blue_cnt), 'b_SIGSTR_PRCT':self.weird_div(avg_bsigstr_prct,blue_cnt)
-                , 'b_SUB':self.weird_div(avg_bsub,blue_cnt), 'b_TD': self.weird_div(avg_bTD,blue_cnt), 'b_TD_PRCT':self.weird_div(avg_bTD_prct,blue_cnt),
-                 'b_TTLSTR':self.weird_div(avg_bttlstr,blue_cnt) ,'b_TTLSTR_PRCT':self.weird_div(avg_bttlstr_prct,blue_cnt),
-                'red_fighter':red_fighter,'r_KD':self.weird_div(avg_rKD,red_cnt), 'r_PASS':self.weird_div(avg_rpass,red_cnt),
-                'r_SIGSTR':self.weird_div(avg_rsigstr,red_cnt), 'r_SIGSTR_PRCT':self.weird_div(avg_rsigstr_prct,red_cnt), 'r_SUB':self.weird_div(avg_rsub,red_cnt),
-                'r_TD':self.weird_div(avg_rTD,red_cnt), 'r_TD_PRCT':self.weird_div(avg_rTD_prct,red_cnt),
-                'r_TTLSTR':self.weird_div(avg_rttlstr,red_cnt),'r_TTLSTR_PRCT':self.weird_div(avg_rttlstr_prct,red_cnt)}
+            return {
+                'blue_fighter':blue_fighter,
+                'b_KD':self.weird_div(avg_bKD,blue_cnt),
+                'b_REV':self.weird_div(avg_brev,blue_cnt),
+                'b_LAND_SIGSTR':self.weird_div(avg_bsigstr_land,blue_cnt),
+                'b_TTL_SIGSTR':self.weird_div(avg_bsigstr_ttl,blue_cnt),
+                'b_SUB':self.weird_div(avg_bsub,blue_cnt),
+                'b_LAND_TD': self.weird_div(avg_bTD_land,blue_cnt),
+                'b_TTL_TD':self.weird_div(avg_bTD_land,blue_cnt),
+                'b_TTL_STR':self.weird_div(avg_bstr_ttl,blue_cnt),
+                'b_LAND_STR':self.weird_div(avg_bstr_land,blue_cnt),
+                'b_CNTRL_SEC':self.weird_div(avg_rcntrl_sec,blue_cnt),
+
+                'red_fighter':red_fighter,
+                'r_KD':self.weird_div(avg_rKD,red_cnt),
+                'r_REV':self.weird_div(avg_rrev,red_cnt),
+                'r_LAND_SIGSTR':self.weird_div(avg_rsigstr_land,red_cnt),
+                'r_TTL_SIGSTR':self.weird_div(avg_rsigstr_ttl,red_cnt),
+                'r_SUB':self.weird_div(avg_rsub,red_cnt),
+                'r_LAND_TD': self.weird_div(avg_rTD_land,red_cnt),
+                'r_TTL_TD':self.weird_div(avg_rTD_ttl,red_cnt),
+                'r_TTL_STR':self.weird_div(avg_rstr_ttl,red_cnt),
+                'r_LAND_STR':self.weird_div(avg_rstr_land,red_cnt),
+                'r_CNTRL_SEC':self.weird_div(avg_rcntrl_sec,red_cnt),
+            }
+
+
 
     def generate_data(self) -> Tuple[Sequence,Any,List]:
         """
@@ -229,7 +309,8 @@ class Predictions():
         pickle.dump(model, open(filename, 'wb'))
 
         accuracy = metrics.accuracy_score(y_test,y_pred)
-        precision = metrics.precision(y_test,y_pred)
+        # precision = metrics.precision(y_test,y_pred)
+        precision = metrics.precision_score(y_test,y_pred)
         recall = metrics.recall_score(y_test,y_pred)
         print('################################################################################')
         print("Accuracy:",accuracy)
@@ -295,7 +376,8 @@ class Predictions():
             #out_fighters is a dataframe with all the averages of the to-be predicted fighters
 
             data.append(self.populate_dataframes(fighter_frame, blue_fighter,red_fighter, self.connection))
-            ##print(data)
+            print(data)
+            print(self.columns)
             out_fighters = pd.DataFrame(data,columns=self.columns)
             return out_fighters
 
