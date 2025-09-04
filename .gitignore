@@ -12,3 +12,4 @@ migrations/*
 *.code-workspace
 last_scraped_results.pickle
 proxifly/
+*/logs/
