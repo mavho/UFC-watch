@@ -3,7 +3,6 @@ __pycache__/*
 *.txt
 deprecated_files/*
 *.sh
-test.py
 *.db
 trained_Kev.sav
 .vscode/*
