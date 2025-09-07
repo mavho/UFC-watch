@@ -1,5 +1,6 @@
 import os
 from typing import Dict
+from argparse import ArgumentParser,Namespace
 
 from ufc_api import db,app 
 from .UFC_stats_parse import FighterStats
@@ -39,7 +40,6 @@ def populate_bouts_fighters_table(event_data):
                 bouts_q = Bouts.query.filter_by(event_id=int(event_q.id)).all()
                 if bouts_q:
                     print(f"event: {event_name} already exists and has bouts")
-                    return
                 else:
                     print(f"event: {event_name} already exists, but has no bouts.")
 
@@ -53,42 +53,82 @@ def populate_bouts_fighters_table(event_data):
 
             for link,bout in bouts.items():
                 try:
-                    db.session.add(
-                        Bouts(
-                            event_id=int(event_q.id),
-                            time=bout['Time'],end_round=bout['Round'],
-                            method=bout['Method'],
-                            result=bout['Result'],
-                            weight_class=bout['WeightClass'],
-                            winner=bout['Winner'],
-                            loser=bout['Loser'],
-                            red_fighter=bout['Red'].fighter,
-                            r_KD=bout['Red'].KD,
-                            r_LAND_SIGSTR=bout['Red'].SIGSTR_LAND,
-                            r_TTL_SIGSTR=bout['Red'].SIGSTR_TTL,
-                            r_TTL_STR=bout['Red'].TTLSTR_TTL,
-                            r_LAND_STR=bout['Red'].TTLSTR_LAND,
-                            r_LAND_TD=bout['Red'].TD_LAND,
-                            r_TTL_TD=bout['Red'].TD_TTL,
-                            r_SUB=bout['Red'].SUB,
-                            r_REV=bout['Red'].REV,
-                            r_CNTRL_SEC=bout['Red'].CNTRL_SEC,
+                    print(bout)
 
-                            blue_fighter=bout['Blue'].fighter,
-                            b_KD=bout['Blue'].KD,
-                            b_LAND_SIGSTR=bout['Blue'].SIGSTR_LAND,
-                            b_TTL_SIGSTR=bout['Blue'].SIGSTR_TTL,
-                            b_TTL_STR=bout['Blue'].TTLSTR_TTL,
-                            b_LAND_STR=bout['Blue'].TTLSTR_LAND,
-                            b_LAND_TD=bout['Blue'].TD_LAND,
-                            b_TTL_TD=bout['Blue'].TD_TTL,
-                            b_SUB=bout['Blue'].SUB,
-                            b_REV=bout['Blue'].REV,
-                            b_CNTRL_SEC=bout['Blue'].CNTRL_SEC,
+                    bout = Bouts.query.filter_by(
+                        event_id=int(event_q.id),
+                        red_fighter=bout['Red'],
+                        blue_fighter=bout['Blue'],
+                    )
+                    if not bout:
+                        print(f"Inserting for {event_q.id}")
+                        db.session.add(
+                            Bouts(
+                                event_id=int(event_q.id),
+                                time=bout['Time'],end_round=bout['Round'],
+                                method=bout['Method'],
+                                result=bout['Result'],
+                                weight_class=bout['WeightClass'],
+                                winner=bout['Winner'],
+                                loser=bout['Loser'],
+                                red_fighter=bout['Red'].fighter,
+                                r_KD=bout['Red'].KD,
+                                r_LAND_SIGSTR=bout['Red'].SIGSTR_LAND,
+                                r_TTL_SIGSTR=bout['Red'].SIGSTR_TTL,
+                                r_TTL_STR=bout['Red'].TTLSTR_TTL,
+                                r_LAND_STR=bout['Red'].TTLSTR_LAND,
+                                r_LAND_TD=bout['Red'].TD_LAND,
+                                r_TTL_TD=bout['Red'].TD_TTL,
+                                r_SUB=bout['Red'].SUB,
+                                r_REV=bout['Red'].REV,
+                                r_CNTRL_SEC=bout['Red'].CNTRL_SEC,
 
-                        ))
+                                blue_fighter=bout['Blue'].fighter,
+                                b_KD=bout['Blue'].KD,
+                                b_LAND_SIGSTR=bout['Blue'].SIGSTR_LAND,
+                                b_TTL_SIGSTR=bout['Blue'].SIGSTR_TTL,
+                                b_TTL_STR=bout['Blue'].TTLSTR_TTL,
+                                b_LAND_STR=bout['Blue'].TTLSTR_LAND,
+                                b_LAND_TD=bout['Blue'].TD_LAND,
+                                b_TTL_TD=bout['Blue'].TD_TTL,
+                                b_SUB=bout['Blue'].SUB,
+                                b_REV=bout['Blue'].REV,
+                                b_CNTRL_SEC=bout['Blue'].CNTRL_SEC,
+                            ))
                 ### key error is generally produced from the new fight (we don't know who is red)
                 except KeyError:
                     pass
 
-        db.session.commit()
+            db.session.commit()
+
+def find_missing_bouts():
+    with app.app_context():
+
+        events = Events.query.all()
+
+        for event in events:
+
+            bouts = Bouts.query.filter_by(event_id=event.id).all()
+
+            if not bouts:
+                print(f"{event.event} does not have any bouts")
+            else:
+                print(f"{event.event} has {len(bouts)} bouts")
+
+                # for bout in bouts:
+                #     print(f"{bout.red_fighter} vs {bout.blue_fighter}")
+                # print("##########################################################")
+                
+
+if __name__ == "__main__":
+    args = ArgumentParser()
+    args.add_argument(
+        '--find_bouts',
+        action='store_true',
+        help="Finds the missing bouts for each event"
+    )
+
+    args = args.parse_args()
+    if args.find_bouts:
+        find_missing_bouts()
+

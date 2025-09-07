@@ -18,11 +18,15 @@ from predictions.predictions import Predictions
 LAST_SCRAPE_RESULTS_PICKLE = 'last_scaped_results.pickle'
 
 def main(args:Namespace):
+    if args.find_bouts:
+        dh.find_missing_bouts()
+        return
 
     if args.replay == 'results':
 
         with open(LAST_SCRAPE_RESULTS_PICKLE,'rb') as f:
             events_data = pickle.load(f)
+
             
     else:
         ### load in the proxy list
@@ -43,6 +47,13 @@ def main(args:Namespace):
         if args.replay == 'queue':
             scraper.load_queue()
 
+            loop.run_until_complete(
+                scraper.crawl()
+            )
+            events_data = scraper.results
+        elif args.replay == 'failed':
+            print("Replaying failed url's")
+            scraper.load_failed_queue()
             loop.run_until_complete(
                 scraper.crawl()
             )
@@ -84,6 +95,9 @@ def main(args:Namespace):
 
     if args.write:
         print("Writing results to SQL table")
+        if 'events_data' not in locals():
+            print("No event data found")
+            return
         dh.populate_bouts_fighters_table(events_data)
     
     if args.predict:
@@ -128,10 +142,11 @@ if __name__ == '__main__':
 
     args.add_argument(
         '--replay',
-        choices=['queue','results'],
+        choices=['queue','results','failed'],
         help="Continue from where the previous run left off. You can specify\
             queue to replay a run that previous ended during the scrape phase.\
-            You can also specify results to fetch the last scrapped run's results"
+            You can also specify results to fetch the last scrapped run's results.\
+            Finally can set 'failed' to run failed URL's from a previous search."
     )
 
     args.add_argument(
@@ -151,6 +166,12 @@ if __name__ == '__main__':
         '--predict',
         action='store_true',
         help="Generates a predictions JSON file that predicts on the scrapped results"
+    )
+    
+    args.add_argument(
+        '--find_bouts',
+        action='store_true',
+        help="Finds the missing bouts for each event"
     )
 
     main(args.parse_args())

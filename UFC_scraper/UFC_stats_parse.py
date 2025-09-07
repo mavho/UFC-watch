@@ -47,13 +47,19 @@ class UFCWebScraper():
     Web crawler dedicated to the ufc stats events page ;)
     """
     pickled_queue_file = "scrape_q.pickle"
-    pickled_failed_tasks = "failed_tasks.pickle"
+    pickled_failed_tasks_file = "failed_tasks.pickle"
     def __init__(self, concurrency=20,start=0,end=None,proxy_list:List[str]=None):
         """
         concurrency (int) -> Int to specify how many workers.\n
         Takes in listfile, which is the location of the proxy_list.txt
         """
-        self.r_proxy = RotatingProxy(proxy_list=proxy_list)
+        self.r_proxies = [
+            RotatingProxy(proxy_list=proxy_list),
+            RotatingProxy(proxy_list=proxy_list),
+            RotatingProxy(proxy_list=proxy_list),
+            RotatingProxy(proxy_list=proxy_list),
+        ]
+        # self.r_proxy = RotatingProxy(proxy_list=proxy_list)
 
         ### Base events URL that contains all UFC events.
         self.events_all_url = 'http://ufcstats.com/statistics/events/completed?page=all'
@@ -69,7 +75,7 @@ class UFCWebScraper():
         ### Result Dictionary.
         self.results = {}
 
-        self.failed_urls = []
+        self.failed_urls:List[TaskQueueMessage] = []
 
         self.loop=None
         self.task_queue :asyncio.Queue[TaskQueueMessage] = asyncio.Queue()
@@ -100,9 +106,12 @@ class UFCWebScraper():
         This queue can be used to replay the past parsed url's.
         """
 
-        print(f"Saving failed tasks with {len(self.failed_urls)} items into {self.pickled_failed_tasks}")
-        with open(self.pickled_failed_tasks,'wb+') as f:
+        if len(self.failed_urls) == 0:
+            print("No failed urls recorded.")
+            return
 
+        print(f"Saving failed tasks with {len(self.failed_urls)} items into {self.pickled_failed_tasks_file}")
+        with open(self.pickled_failed_tasks_file,'wb+') as f:
             q_list = []
             for task in self.failed_urls:
                 q_list.append(task)
@@ -118,6 +127,20 @@ class UFCWebScraper():
 
             q_list = pickle.load(f)
             for task in q_list:
+                print(f"Putting {task.url} at depth {task.depth} in Q.")
+                self.task_queue.put_nowait(task)
+
+    def load_failed_queue(self):
+        """_summary_
+        Loads the pickled file into a queue.
+        
+        This queue can be used to replay the past parsed url's.
+        """
+        with open(self.pickled_failed_tasks_file,'rb') as f:
+
+            q_list = pickle.load(f)
+            for task in q_list:
+                print(f"Putting failed {task.url} at depth {task.depth} in Q.")
                 self.task_queue.put_nowait(task)
  
     async def crawl(self) -> None:
@@ -134,8 +157,10 @@ class UFCWebScraper():
                 w.cancel()
             print("Finished")
         finally:
-            if self.r_proxy.session:
-                await self.r_proxy.session.close()
+            for proxy in self.r_proxies:
+                await proxy.session.close()
+            # if self.r_proxy.session:
+            #     await self.r_proxy.session.close()
 
             self.pickle_failed_tasks()
 
@@ -157,27 +182,31 @@ class UFCWebScraper():
                 continue
                 
             print(f"Q size: {self.task_queue.qsize()}")
-            self.crawled_urls.add(task.url)
 
             ### crawl the page.
             try:
                 url,links,html,data = await self.crawl_page(task.url,task.depth)
             except RetryException:
                 ### retry the task
-                if task.retry_count == 10:
-                    print("Task failed retry count")
-                    self.failed_urls.append(task)
-                else:
-                    task.retry_count += 1
-                    await self.task_queue.put(task)
+                # if task.retry_count == 10:
+                #     print(f"{task.url} Ran into Exception")
+                #     self.failed_urls.append(task)
+                # else:
+                print(f"{task.url} retrying")
+                task.retry_count += 1
+                await self.task_queue.put(task)
 
             except Exception as e:
+                print("#######################")
+                print(f"{task.url} Ran into Exception")
                 print(traceback.format_exc())
-                print("Ran into Exception")
+                print("#######################")
                 self.failed_urls.append(task)
             else:
                 ### update results based on depth.
                 ### results will be hashed by links
+
+                self.crawled_urls.add(task.url)
                 
                 if task.depth == 0:
                     ### This depth inserts every event detail into results. Set key to event link
@@ -223,10 +252,15 @@ class UFCWebScraper():
         if depth == 0:
             await asyncio.sleep(random.randrange(0,3))
             t = time.perf_counter()
-            html = await self.r_proxy._make_request(url)
-            print(f"Req done at {time.perf_counter() - t}")
+            proxy = random.choice(self.r_proxies)
+            html = await proxy._make_request(url)
+
+            # html = await self.r_proxy._make_request(url)
+
             if html is None:
+                print(f"Req failed at {time.perf_counter() - t}")
                 raise RetryException(f'{url} failed, retry')
+            print(f"Req done at {time.perf_counter() - t}")
             ### links -> a set of all event URLs that need to be scrapped in depth 1.
             ### data -> List of general event information. dict(link,location,name,date)
             # links, data = self.parse_all_events_page(html)
@@ -238,16 +272,19 @@ class UFCWebScraper():
                 html
             )
         elif depth == 1:
-            await asyncio.sleep(random.randrange(0,3))
+            await asyncio.sleep(random.randrange(0,6))
             # html = await self.r_proxy._make_request(url)
             t = time.perf_counter()
-            html = await self.r_proxy._make_request(url)
-            print(f"Req done at {time.perf_counter() - t}")
+            proxy = random.choice(self.r_proxies)
+            html = await proxy._make_request(url)
+            # html = await self.r_proxy._make_request(url)
             if html is None:
+                print(f"Req failed at {time.perf_counter() - t}")
                 raise RetryException(f'{url} failed, retry')
+            print(f"Req done at {time.perf_counter() - t}")
             ### links -> a set of all BOUT URLs that need to be scrapped in depth 2
             ### data (dict) -> Data on all bouts that contain general bout info.
-            ### Data is hashbed by the particular BOUT URL
+            ### Data is hashed by the particular BOUT URL
             # links, data = self.parse_event_page(html)
             # links, data = await asyncio.to_thread(self.parse_event_page(html))
             links, data = await self.loop.run_in_executor(
@@ -259,11 +296,15 @@ class UFCWebScraper():
             await asyncio.sleep(random.randrange(0,5))
             # html = await self.r_proxy._make_request(url)
             t = time.perf_counter()
-            html = await self.r_proxy._make_request(url)
-            print(f"Req done at {time.perf_counter() - t}")
+
+            proxy = random.choice(self.r_proxies)
+            html = await proxy._make_request(url)
+            # html = await self.r_proxy._make_request(url)
 
             if html is None:
+                print(f"Req failed at {time.perf_counter() - t}")
                 raise RetryException(f'{url} failed, retry')
+            print(f"Req done at {time.perf_counter() - t}")
             ### data -> Fight stastics on a particular bout
 
             data = await self.loop.run_in_executor(
@@ -392,78 +433,32 @@ class UFCWebScraper():
         table = soup.find('table')
         columns = table.find_all('td')
         
-        try:
-            red_fighter = columns[0].contents[1].get_text(strip=True)
-        except IndexError as e:
-            print(traceback.print_exc())
-            # print(f"Columns: {columns}")
+        red_fighter = columns[0].contents[1].get_text(strip=True)
 
-        try:
-            blue_fighter = columns[0].contents[3].get_text(strip=True)
-        except IndexError as e:
-            print(traceback.print_exc())
-            # print(f"Columns: {columns}")
 
-        # red_stats['fighter'] = red_fighter 
-        # blue_stats['fighter'] = blue_fighter        
+        blue_fighter = columns[0].contents[3].get_text(strip=True)
+     
 
         red_KD = columns[1].contents[1].get_text(strip=True)
         blue_KD = columns[1].contents[3].get_text(strip=True)
-        # red_stats['KD'] = columns[1].contents[1].get_text(strip=True)
-        # blue_stats['KD'] = columns[1].contents[3].get_text(strip=True)
-
         ### parse sig str
-        ### the result of this is for example: 33 of 70
         red_sig_str = columns[2].contents[1].get_text(strip=True)
         red_sig_str_land, red_sig_str_total = red_sig_str.split('of',1)
-
-        # red_stats['SIGSTR_LAND'] = red_sig_str_land
-        # red_stats['SIGSTR_TTL'] = red_sig_str_total
 
         blue_sig_str = columns[2].contents[3].get_text(strip=True)
         blue_sig_str_land, blue_sig_str_total = blue_sig_str.split('of',1)
 
-        # blue_stats['SIGSTR_LAND'] = blue_sig_str_land
-        # blue_stats['SIGSTR_TTL'] = blue_sig_str_total
-
-        # red_stats['SIGSTR'] = re.sub(' of ', '/', columns[2].contents[1].get_text(strip=True))
-        # blue_stats['SIGSTR'] = re.sub(' of ', '/', columns[2].contents[3].get_text(strip=True))
-
-        # deprecated
-        # red_stats['SIGSTR_PRCT'] = columns[3].contents[1].get_text(strip=True)
-        # blue_stats['SIGSTR_PRCT'] = columns[3].contents[3].get_text(strip=True)
-
         ### parsing total strikes
         red_ttl_str = columns[4].contents[1].get_text(strip=True)
         red_ttl_str_land, red_ttl_str_total = red_ttl_str.split('of',1)
-
-        # red_stats['TTLSTR_LAND'] = red_sig_str_land
-        # red_stats['TTLSTR_TTL'] = red_sig_str_total
-
         blue_ttl_str = columns[4].contents[3].get_text(strip=True)
         blue_ttl_str_land, blue_ttl_str_total = blue_ttl_str.split('of',1)
-
-        # blue_stats['TTLSTR_LAND'] = blue_sig_str_land
-        # blue_stats['TTLSTR_TTL'] = blue_sig_str_total
-
-        # red_stats['TTLSTR'] = re.sub(' of ', '/', columns[4].contents[1].get_text(strip=True))
-        # blue_stats['TTLSTR'] = re.sub(' of ', '/', columns[4].contents[3].get_text(strip=True))
 
         red_td = columns[5].contents[1].get_text(strip=True)
         red_td_land, red_td_total = red_td.split('of',1)
 
-        # red_stats['TD_LAND'] = red_td_land
-        # red_stats['TD_TTL'] = red_td_total
-
         blue_td = columns[5].contents[3].get_text(strip=True)
         blue_td_land, blue_td_total = blue_td.split('of',1)
-
-        # blue_stats['TD_LAND'] = blue_td_land
-        # blue_stats['TD_TTL'] = blue_td_total
-
-        # deprecated
-        # red_stats['TD_PRCT'] = columns[6].contents[1].get_text(strip=True)
-        # blue_stats['TD_PRCT'] = columns[6].contents[3].get_text(strip=True)
 
         red_SUB = columns[7].contents[1].get_text(strip=True)
         blue_SUB = columns[7].contents[3].get_text(strip=True)
